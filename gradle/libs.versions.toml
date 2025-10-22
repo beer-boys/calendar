@@ -1,0 +1,30 @@
+[versions]
+kotlin = "2.0.10"
+detekt = "1.23.7"
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+
+spring-boot = { id = "org.springframework.boot", version = "3.4.5" }
+spring-dependency-management = { id = "io.spring.dependency-management", version = "1.1.0" }
+
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+
+[libraries]
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8"  }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect"  }
+
+spring-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-starter-data-jdbc = { module = "org.springframework.boot:spring-boot-starter-data-jdbc" }
+spring-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
+
+fasterxml-jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
+
+
+detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+#liquibase-core = { module = "org.liquibase:liquibase-core" }
