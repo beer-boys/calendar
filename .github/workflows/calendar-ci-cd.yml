@@ -1,0 +1,27 @@
+name: build project
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: setup jdk
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: gradle
+
+      - name: grant gradlew execution permission
+        run: chmod +x gradlew
+
+      - name: build
+        run: ./gradlew clean build
