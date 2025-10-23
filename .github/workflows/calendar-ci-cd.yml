@@ -20,8 +20,14 @@ jobs:
           java-version: '21'
           cache: gradle
 
-      - name: grant gradlew execution permission
-        run: chmod +x gradlew
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v5
 
       - name: build
-        run: ./gradlew clean build
+        run: ./gradlew build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: build/**
