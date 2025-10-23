@@ -1,5 +1,10 @@
+import java.net.URI
+import java.util.UUID
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
+
+    `maven-publish`
 
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
@@ -18,6 +23,31 @@ java {
 
 repositories {
     mavenCentral()
+}
+
+private fun envOrEmpty(env: String) = System.getenv(env)?.toString() ?: ""
+
+version = "testing-${UUID.randomUUID()}"
+
+// todo create version resolving
+publishing {
+    publications {
+        create<MavenPublication>(name) {
+            logger.info("create publication $groupId:$artifactId:$version")
+            from(components["java"])
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = URI("https://maven.pkg.github.com/beer-boys/calendar")
+            credentials {
+                username = envOrEmpty("GITHUB_ACTOR")
+                password = envOrEmpty("GITHUB_TOKEN")
+            }
+        }
+    }
 }
 
 dependencies {
