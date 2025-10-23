@@ -1,4 +1,5 @@
 import java.net.URI
+import java.util.UUID
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -26,8 +27,17 @@ repositories {
 
 private fun envOrEmpty(env: String) = System.getenv(env)?.toString() ?: ""
 
+version = "testing-${UUID.randomUUID()}"
+
 // todo create version resolving
 publishing {
+    publications {
+        create<MavenPublication>(name) {
+            logger.info("create publication $groupId:$artifactId:$version")
+            from(components["java"])
+        }
+    }
+
     repositories {
         maven {
             name = "GitHubPackages"
