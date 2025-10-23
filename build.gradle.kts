@@ -1,6 +1,10 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.spring)
+
+    `maven-publish`
 
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
@@ -13,6 +17,22 @@ description = "calendar"
 
 repositories {
     mavenCentral()
+}
+
+private fun envOrEmpty(env: String) = System.getenv(env)?.toString() ?: ""
+
+// todo create version resolving
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = URI("https://maven.pkg.github.com/beer-boys/calendar")
+            credentials {
+                username = envOrEmpty("GITHUB_ACTOR")
+                password = envOrEmpty("GITHUB_TOKEN")
+            }
+        }
+    }
 }
 
 dependencies {

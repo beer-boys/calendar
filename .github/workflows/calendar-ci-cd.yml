@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,3 +31,8 @@ jobs:
         with:
           name: build-artifacts
           path: build/**
+
+      - name: publish package
+        run: ./gradlew publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
