@@ -1,3 +1,6 @@
+import ru.itmo.dws.version.VersionConfig
+import ru.itmo.dws.version.mutator.impl.LocalVersionMutator
+import ru.itmo.dws.version.resolver.impl.ConstantVersionResolver
 import java.net.URI
 import java.util.UUID
 
@@ -27,9 +30,16 @@ repositories {
 
 private fun envOrEmpty(env: String) = System.getenv(env)?.toString() ?: ""
 
-version = "testing-${UUID.randomUUID()}"
-
 // todo create version resolving
+private val versionConfig = VersionConfig(
+    resolver = ConstantVersionResolver("testing-${UUID.randomUUID()}"),
+    mutators = mutableListOf(
+        LocalVersionMutator(project.gradle.startParameter.taskNames),
+    )
+)
+
+version = versionConfig.newVersion()
+
 publishing {
     publications {
         create<MavenPublication>(name) {
