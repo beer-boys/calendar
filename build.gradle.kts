@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.spring)
 
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
@@ -10,12 +11,6 @@ plugins {
 group = "ru.itmo.dws"
 description = "calendar"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
 repositories {
     mavenCentral()
 }
@@ -24,13 +19,14 @@ dependencies {
     detektPlugins(gav(libs.detekt.formatting))
 
     implementation(libs.spring.starter.web)
-//    implementation(libs.spring.starter.data.jdbc)
+    implementation(libs.spring.starter.data.jdbc)
     implementation(libs.spring.starter.actuator)
 
     implementation(libs.fasterxml.jackson.kotlin)
     implementation(libs.kotlin.reflect)
 
-//    implementation(libs.liquibase.core)
+    implementation(libs.postgres)
+    implementation(libs.liquibase.core)
 }
 
 dependencies {
@@ -43,6 +39,9 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.engine)
+
+    testImplementation(libs.testcontainers)
+    testImplementation(libs.testcontainers.postgres)
 }
 
 detekt {
@@ -53,6 +52,7 @@ detekt {
 }
 
 kotlin {
+    jvmToolchain(21)
     compilerOptions {
         freeCompilerArgs.addAll("-Xjsr305=strict")
     }

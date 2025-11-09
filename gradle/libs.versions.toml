@@ -1,9 +1,11 @@
 [versions]
 kotlin = "2.0.10"
 detekt = "1.23.7"
+testcontainers = "2.0.1"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 
 spring-boot = { id = "org.springframework.boot", version = "3.4.5" }
 spring-dependency-management = { id = "io.spring.dependency-management", version = "1.1.0" }
@@ -19,12 +21,16 @@ spring-starter-data-jdbc = { module = "org.springframework.boot:spring-boot-star
 spring-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 
+postgres = { module = "org.postgresql:postgresql", version = "42.7.5" }
+liquibase-core = { module = "org.liquibase:liquibase-core" }
+
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
 
+testcontainers = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
+testcontainers-postgres = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+
 fasterxml-jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 
-
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
-#liquibase-core = { module = "org.liquibase:liquibase-core" }

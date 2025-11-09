@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
+
+    <changeSet id="BB-14-create-notification-outbox-status-enum" author="quicklybly">
+        <sql>
+            CREATE TYPE notification_outbox_status AS ENUM ('PENDING', 'IN_PROGRESS', 'DONE', 'FAILED');
+        </sql>
+        <rollback>
+            DROP TYPE notification_outbox_status;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="BB-14-create-notification-outbox-type-enum" author="quicklybly">
+        <sql>
+            CREATE TYPE notification_outbox_type AS ENUM ('EMAIL');
+        </sql>
+        <rollback>
+            DROP TYPE notification_outbox_type;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="BB-14-create-notification-outbox-table" author="quicklybly">
+        <createTable tableName="notification_outbox">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="status" type="notification_outbox_status" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="notification_outbox_type">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attempts_count" type="int" defaultValue="0"/>
+            <column name="next_retry_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="BB-14-create-notification-outbox-status-idx" author="quicklybly">
+        <sql>
+            CREATE INDEX notification_outbox_status_idx
+            ON notification_outbox (status, created_at ASC)
+            WHERE status IN ('PENDING', 'IN_PROGRESS');
+        </sql>
+        <rollback>
+            DROP INDEX IF EXISTS notification_outbox_status_idx;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="BB-14-create-notification-outbox-failed-idx" author="quicklybly">
+        <sql>
+            CREATE INDEX notification_outbox_failed_idx
+            ON notification_outbox (status, next_retry_at ASC)
+            WHERE status = 'FAILED';
+        </sql>
+        <rollback>
+            DROP INDEX IF EXISTS notification_outbox_failed_idx;
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
