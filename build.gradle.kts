@@ -25,7 +25,7 @@ dependencies {
     implementation(libs.fasterxml.jackson.kotlin)
     implementation(libs.kotlin.reflect)
 
-    implementation(libs.postgres)
+    runtimeOnly(libs.postgres)
     implementation(libs.liquibase.core)
 }
 
