@@ -1,11 +1,12 @@
 package ru.itmo.dws.calendar.port.output
 
+import java.time.LocalDate
 import ru.itmo.dws.calendar.domain.model.Habit
 import ru.itmo.dws.calendar.domain.valueobject.HabitId
 import ru.itmo.dws.calendar.domain.valueobject.UserId
-import java.time.LocalDate
 
 interface HabitRepository {
+
     fun saveHabit(habit: Habit): HabitId
 
     fun findHabit(habitId: HabitId): Habit?
