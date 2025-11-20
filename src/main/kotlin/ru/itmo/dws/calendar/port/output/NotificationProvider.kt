@@ -6,7 +6,6 @@ import ru.itmo.dws.calendar.domain.model.Meeting
 import ru.itmo.dws.calendar.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.domain.valueobject.UserId
 
-
 interface NotificationProvider {
 
     fun notifyMeetingRescheduled(meeting: Meeting, oldTimeSlot: TimeSlot, newTimeSlot: TimeSlot)

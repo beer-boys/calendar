@@ -1,7 +1,12 @@
 package ru.itmo.dws.calendar.domain.model
 
 import java.time.Duration
-import ru.itmo.dws.calendar.domain.valueobject.*
+import ru.itmo.dws.calendar.domain.valueobject.BufferDuration
+import ru.itmo.dws.calendar.domain.valueobject.MeetingPriority
+import ru.itmo.dws.calendar.domain.valueobject.RoomId
+import ru.itmo.dws.calendar.domain.valueobject.SchedulingConstraints
+import ru.itmo.dws.calendar.domain.valueobject.TimeSlot
+import ru.itmo.dws.calendar.domain.valueobject.UserId
 
 data class MeetingRequest(
     val creator: UserId,

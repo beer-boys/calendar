@@ -13,19 +13,11 @@ data class SchedulingConstraints(
     val maxSuggestionsCount: Int = 10
 ) {
     fun satisfies(timeSlot: TimeSlot): Boolean {
-        if (preferredTimeRange != null && !preferredTimeRange.contains(timeSlot)) {
-            return false
-        }
-
-        if (excludedDays.contains(timeSlot.start.dayOfWeek)) {
-            return false
-        }
-
-        if (!workingHours.isWithinWorkingHours(timeSlot)) {
-            return false
-        }
-
-        return true
+        return !(
+            preferredTimeRange != null && !preferredTimeRange.contains(timeSlot) ||
+                excludedDays.contains(timeSlot.start.dayOfWeek) ||
+                !workingHours.isWithinWorkingHours(timeSlot)
+            )
     }
 }
 

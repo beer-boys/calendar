@@ -2,7 +2,12 @@ package ru.itmo.dws.calendar.domain.model
 
 import java.time.Duration
 import java.util.UUID
-import ru.itmo.dws.calendar.domain.valueobject.*
+import ru.itmo.dws.calendar.domain.valueobject.BufferDuration
+import ru.itmo.dws.calendar.domain.valueobject.MeetingId
+import ru.itmo.dws.calendar.domain.valueobject.RoomId
+import ru.itmo.dws.calendar.domain.valueobject.SchedulingConstraints
+import ru.itmo.dws.calendar.domain.valueobject.TimeSlot
+import ru.itmo.dws.calendar.domain.valueobject.UserId
 
 data class MeetingDraft(
     val id: String = UUID.randomUUID().toString(),
@@ -51,11 +56,9 @@ data class MeetingDraft(
     }
 
     fun satisfies(timeSlot: TimeSlot): Boolean {
-        if (timeSlot.duration() < duration) {
-            return false
-        }
-
-        if (preferredTimeRange != null && !preferredTimeRange.contains(timeSlot)) {
+        if (timeSlot.duration() < duration ||
+            preferredTimeRange != null && !preferredTimeRange.contains(timeSlot)
+        ) {
             return false
         }
 

@@ -1,13 +1,13 @@
 package ru.itmo.dws.calendar.domain.model
 
+import java.time.Duration
+import java.time.LocalDate
 import ru.itmo.dws.calendar.domain.valueobject.BufferDuration
 import ru.itmo.dws.calendar.domain.valueobject.HabitFlexibilityWindow
 import ru.itmo.dws.calendar.domain.valueobject.HabitId
 import ru.itmo.dws.calendar.domain.valueobject.RecurrenceRule
 import ru.itmo.dws.calendar.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.domain.valueobject.UserId
-import java.time.Duration
-import java.time.LocalDate
 
 data class Habit(
     val id: HabitId,

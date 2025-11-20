@@ -1,6 +1,10 @@
 package ru.itmo.dws.calendar.domain.model
 
-import ru.itmo.dws.calendar.domain.valueobject.*
+import ru.itmo.dws.calendar.domain.valueobject.BufferDuration
+import ru.itmo.dws.calendar.domain.valueobject.MeetingId
+import ru.itmo.dws.calendar.domain.valueobject.RoomId
+import ru.itmo.dws.calendar.domain.valueobject.TimeSlot
+import ru.itmo.dws.calendar.domain.valueobject.UserId
 
 data class Meeting(
     val id: MeetingId,
