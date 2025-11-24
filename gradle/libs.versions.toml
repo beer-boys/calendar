@@ -16,6 +16,7 @@ kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect"  }
 
 spring-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-starter-data-jdbc = { module = "org.springframework.boot:spring-boot-starter-data-jdbc" }
+spring-starter-oauth2-client = { module = "org.springframework.boot:spring-boot-starter-oauth2-client" }
 spring-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 
@@ -27,4 +28,6 @@ fasterxml-jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-modu
 
 
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
-#liquibase-core = { module = "org.liquibase:liquibase-core" }
+liquibase-core = { module = "org.liquibase:liquibase-core" }
+
+postgresql = { module = "org.postgresql:postgresql" }
