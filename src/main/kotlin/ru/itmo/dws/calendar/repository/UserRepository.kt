@@ -10,24 +10,30 @@ import ru.itmo.dws.calendar.model.User
 @Component
 interface UserRepository : Repository<User, UUID> {
 
-    @Query("""
+    @Query(
+        """
         SELECT *
         FROM users
         WHERE id = :userId
-    """)
+    """
+    )
     fun findById(userId: UUID): User?
 
-    @Query("""
+    @Query(
+        """
         SELECT id, login, password, first_name, last_name, middle_name
         FROM users
         WHERE login = :login
-    """)
+    """
+    )
     fun findByLogin(login: String): User?
 
-    @Query("""
+    @Query(
+        """
         INSERT INTO users
         VALUES (:id, :login, :password, :firstName, :lastName, :middleName)
-    """)
+    """
+    )
     @Modifying
     fun insert(
         id: UUID,

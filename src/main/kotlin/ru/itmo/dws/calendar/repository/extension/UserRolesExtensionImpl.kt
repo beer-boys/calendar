@@ -21,10 +21,10 @@ class UserRolesExtensionImpl(
         userRoles: List<UserRole>
     ): IntArray {
         val parameters = userRoles.map {
-                MapSqlParameterSource()
-                    .addValue("userId", it.userId)
-                    .addValue("roleId", it.roleId)
-            }
+            MapSqlParameterSource()
+                .addValue("userId", it.userId)
+                .addValue("roleId", it.roleId)
+        }
             .toList()
 
         return namedParameterJdbcTemplate.batchUpdate(INSERT_SQL, parameters.toTypedArray())

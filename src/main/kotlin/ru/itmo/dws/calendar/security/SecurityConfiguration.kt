@@ -27,6 +27,7 @@ open class SecurityConfiguration {
     }
 
     @Bean
+    @Suppress("SpreadOperator", "ForbiddenComment")
     open fun securityFilterChain(
         http: HttpSecurity,
         jwtAuthenticationFilter: JwtAuthenticationFilter,

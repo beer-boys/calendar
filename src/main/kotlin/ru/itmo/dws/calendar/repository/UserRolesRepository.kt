@@ -11,14 +11,17 @@ import ru.itmo.dws.calendar.repository.extension.UserRolesExtension
 @Component
 interface UserRolesRepository : UserRolesExtension, Repository<UserRole, Void> {
 
-    @Query("""
+    @Query(
+        """
         INSERT INTO users_roles
         VALUES (:userId, :roleId)
-    """)
+    """
+    )
     @Modifying
     fun insert(userId: UUID, roleId: Int)
 
-    @Query("""
+    @Query(
+        """
         SELECT r.role_name
         FROM roles r
         WHERE r.id IN (
@@ -26,6 +29,7 @@ interface UserRolesRepository : UserRolesExtension, Repository<UserRole, Void> {
             FROM users_roles ur
             WHERE ur.user_id = :userId
         )
-    """)
+    """
+    )
     fun findRolesByUserId(userId: UUID): List<Int>
 }

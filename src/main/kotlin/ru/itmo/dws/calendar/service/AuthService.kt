@@ -15,6 +15,7 @@ import ru.itmo.dws.calendar.dto.AuthResponse
 import ru.itmo.dws.calendar.dto.RegisterDtoRequest
 import ru.itmo.dws.calendar.dto.RegisterDtoResponse
 import ru.itmo.dws.calendar.exception.LoginFailException
+import ru.itmo.dws.calendar.exception.RefreshTokenException
 import ru.itmo.dws.calendar.exception.RegisterFailException
 import ru.itmo.dws.calendar.model.Role
 import ru.itmo.dws.calendar.model.User
@@ -36,6 +37,7 @@ open class AuthService(
     @Lazy
     private lateinit var self: AuthService
 
+    @Suppress("SwallowedException")
     open fun login(request: AuthRequest): AuthResponse {
         try {
             val existedUser = userRepository.findByLogin(request.login)
@@ -46,7 +48,6 @@ open class AuthService(
             )
 
             return generateTokenResponse(existedUser)
-
         } catch (e: AuthenticationException) {
             throw LoginFailException(request.login)
         }
@@ -82,7 +83,7 @@ open class AuthService(
             return generateTokenResponse(existedUser)
         }
 
-        throw RuntimeException("")
+        throw RefreshTokenException("")
     }
 
     @Transactional
@@ -123,7 +124,7 @@ open class AuthService(
     }
 
     private fun createUser(request: RegisterDtoRequest): User {
-         return User(
+        return User(
             id = UUID.randomUUID(),
             login = request.login,
             hashedPassword = bCryptPasswordEncoder.encode(request.password),

@@ -24,6 +24,7 @@ class JwtAuthenticationFilter(
         private val log = LoggerFactory.getLogger(this::class.java)
     }
 
+    @Suppress("ReturnCount")
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -49,18 +50,18 @@ class JwtAuthenticationFilter(
             if (SecurityContextHolder.getContext().authentication == null) {
                 val userDetails = userDetailsService.loadUserByUsername(username)
                 val authentication = UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.authorities
+                    userDetails,
+                    null,
+                    userDetails.authorities
                 ).apply {
                     details = WebAuthenticationDetailsSource().buildDetails(request)
                 }
                 SecurityContextHolder.getContext().authentication = authentication
             }
-
         } catch (expected: Exception) {
             filterChain.doFilter(request, response)
             log.error("Error while extracting username from jwt token $expected")
             return
         }
-
     }
 }

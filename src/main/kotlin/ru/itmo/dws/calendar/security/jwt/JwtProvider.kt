@@ -1,8 +1,8 @@
 package ru.itmo.dws.calendar.security.jwt
 
 import io.jsonwebtoken.Claims
-import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
 import java.security.Key
 import java.time.ZoneOffset
