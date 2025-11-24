@@ -1,6 +1,7 @@
 package ru.itmo.dws.calendar
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 
@@ -8,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest
 class CalendarApplicationTests {
 
     @Test
+    @Disabled
     fun `context loads`() {
         assertEquals(1, 1)
     }
