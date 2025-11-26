@@ -44,7 +44,7 @@ open class AuthService(
                 ?: throw LoginFailException(request.login)
 
             authenticationManager.authenticate(
-                UsernamePasswordAuthenticationToken(existedUser.id, request.password)
+                UsernamePasswordAuthenticationToken(existedUser.login, request.password)
             )
 
             return generateTokenResponse(existedUser)

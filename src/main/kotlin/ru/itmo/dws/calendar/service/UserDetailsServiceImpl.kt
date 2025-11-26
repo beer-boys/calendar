@@ -12,8 +12,8 @@ class UserDetailsServiceImpl(
     private val userRepository: UserRepository,
 ) : UserDetailsService {
 
-    override fun loadUserByUsername(userId: String): UserDetails {
-        return userRepository.findById(UUID.fromString(userId))
-            ?: throw UserNotFoundException(UUID.fromString(userId))
+    override fun loadUserByUsername(userLogin: String): UserDetails {
+        return userRepository.findByLogin(userLogin)
+            ?: throw UserNotFoundException.byUsername(userLogin)
     }
 }

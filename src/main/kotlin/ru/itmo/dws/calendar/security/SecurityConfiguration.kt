@@ -2,6 +2,7 @@ package ru.itmo.dws.calendar.security
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.annotation.Order
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl
 import org.springframework.security.authentication.AuthenticationManager
@@ -15,36 +16,46 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import ru.itmo.dws.calendar.configuration.BasePath
+import ru.itmo.dws.calendar.configuration.BasePath.GOOGLE_WHITE_LIST
+import ru.itmo.dws.calendar.configuration.BasePath.WHITE_LIST
 
 @Configuration
 @EnableWebSecurity
+@Suppress("SpreadOperator", "MagicNumber", "ForbiddenComment")
 open class SecurityConfiguration {
 
-    companion object {
-        private val WHITE_LIST = listOf(
-            "/api/v1/auth/**"
-        )
-    }
-
     @Bean
-    @Suppress("SpreadOperator", "ForbiddenComment")
-    open fun securityFilterChain(
+    @Order(10)
+    open fun baseAuthChain(
         http: HttpSecurity,
         jwtAuthenticationFilter: JwtAuthenticationFilter,
     ): SecurityFilterChain {
         return http
             .csrf { it.disable() }
             .authorizeHttpRequests {
-                it.requestMatchers(
-                    *WHITE_LIST.toTypedArray()
-                ).permitAll()
+                it.requestMatchers(*WHITE_LIST.toTypedArray()).permitAll()
+                it.requestMatchers("${BasePath.BASE}/**").authenticated()
+            }
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .build()
+    }
+
+    @Bean
+    @Order(1)
+    open fun googleOAuth2Chain(http: HttpSecurity): SecurityFilterChain {
+        return http
+            .csrf { it.disable() }
+            .securityMatcher(*GOOGLE_WHITE_LIST.toTypedArray())
+            .authorizeHttpRequests {
                 it.anyRequest().authenticated()
             }
-            // todo how to make it for some endpoints?
-//            .oauth2Login {
-//
-//            }
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .oauth2Login { oauth2 ->
+                oauth2.successHandler { _, response, _ ->
+                    // todo maybe change habit for another in future
+                    response.sendRedirect("${BasePath.GOOGLE_BASE}/calendars")
+                }
+            }
             .build()
     }
 
