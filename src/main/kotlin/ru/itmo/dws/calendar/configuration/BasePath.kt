@@ -1,0 +1,16 @@
+package ru.itmo.dws.calendar.configuration
+
+object BasePath {
+    const val BASE = "/api/v1"
+    const val AUTH = "$BASE/auth/**"
+    const val GOOGLE_BASE = "$BASE/google"
+    const val GOOGLE_OAUTH2 = "/oauth2/authorization/google"
+    const val GOOGLE_CALLBACK = "/login/oauth2/code/google"
+
+    val WHITE_LIST = listOf(AUTH)
+    val GOOGLE_WHITE_LIST = listOf(
+        "$GOOGLE_BASE/**",
+        "$GOOGLE_OAUTH2/**",
+        "$GOOGLE_CALLBACK/**"
+    )
+}

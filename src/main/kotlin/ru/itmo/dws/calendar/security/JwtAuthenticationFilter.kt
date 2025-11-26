@@ -59,9 +59,9 @@ class JwtAuthenticationFilter(
                 SecurityContextHolder.getContext().authentication = authentication
             }
         } catch (expected: Exception) {
-            filterChain.doFilter(request, response)
             log.error("Error while extracting username from jwt token $expected")
-            return
+        } finally {
+            filterChain.doFilter(request, response)
         }
     }
 }

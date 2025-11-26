@@ -1,3 +1,36 @@
 spring:
   application:
     name: calendar
+  datasource:
+    url: jdbc:postgresql://localhost:5432/calendar?currentSchema=calendar
+    username: calendar
+    password: calendar
+    hikari:
+      maximum-pool-size: 4
+      minimum-idle: 1
+  liquibase:
+    default-schema: calendar
+    user: liquibase
+    password: liquibase
+    change-log: classpath:/db/master-changelog.yaml
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:example}
+            client-secret: ${GOOGLE_CLIENT_SECRET:example}
+            redirect-uri: http://localhost:8080/login/oauth2/code/google
+            scope:
+              - profile
+              - email
+              - https://www.googleapis.com/auth/calendar
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent
+            token-uri: https://oauth2.googleapis.com/token
+
+jwt:
+  secret:
+    access: ${JWT_SECRET_ACCESS:example}
+    refresh: ${JWT_SECRET_REFRESH:example}
