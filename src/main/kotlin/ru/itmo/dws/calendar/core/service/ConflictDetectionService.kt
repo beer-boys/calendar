@@ -6,19 +6,18 @@ import ru.itmo.dws.calendar.core.domain.model.EventType
 import ru.itmo.dws.calendar.core.domain.model.SchedulableEvent
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
-import ru.itmo.dws.calendar.core.port.input.ConflictDetectionUseCase
 import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
 
 class ConflictDetectionService(
     private val eventProviders: List<SchedulableEventProvider>
-) : ConflictDetectionUseCase {
+) {
 
-    override fun detectAllConflictsForUser(userId: UserId, date: LocalDate): List<EventConflict> {
+    fun detectAllConflictsForUser(userId: UserId, date: LocalDate): List<EventConflict> {
         val allEvents = collectAllEventsForUser(userId, date)
         return EventConflict.detectAll(allEvents, date)
     }
 
-    override fun detectConflictsForEvent(
+    fun detectConflictsForEvent(
         event: SchedulableEvent,
         date: LocalDate
     ): List<EventConflict> {
@@ -31,10 +30,10 @@ class ConflictDetectionService(
         }
     }
 
-    override fun detectConflictsInTimeSlot(
+    fun detectConflictsInTimeSlot(
         userId: UserId,
         timeSlot: TimeSlot,
-        excludeEventId: String?
+        excludeEventId: String? = null
     ): List<EventConflict> {
         val date = timeSlot.start.toLocalDate()
         val eventsInSlot = eventProviders
@@ -44,7 +43,7 @@ class ConflictDetectionService(
         return EventConflict.detectAll(eventsInSlot, date)
     }
 
-    override fun detectConflictsBetweenTypes(
+    fun detectConflictsBetweenTypes(
         userId: UserId,
         date: LocalDate,
         sourceType: EventType,
@@ -67,7 +66,7 @@ class ConflictDetectionService(
         }
     }
 
-    override fun hasConflicts(event: SchedulableEvent, date: LocalDate): Boolean {
+    fun hasConflicts(event: SchedulableEvent, date: LocalDate): Boolean {
         return detectConflictsForEvent(event, date).isNotEmpty()
     }
 

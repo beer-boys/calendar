@@ -11,7 +11,6 @@ import ru.itmo.dws.calendar.core.domain.model.toHabitConflict
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
-import ru.itmo.dws.calendar.core.port.input.ConflictDetectionUseCase
 import ru.itmo.dws.calendar.core.port.input.HabitCreationResult
 import ru.itmo.dws.calendar.core.port.input.HabitCreationStatus
 import ru.itmo.dws.calendar.core.port.input.HabitManagementUseCase
@@ -22,7 +21,7 @@ class HabitManagementService(
     private val habitRepository: HabitRepository,
     private val eventProviders: List<SchedulableEventProvider>,
     private val habitSlotFinder: HabitSlotFinder,
-    private val conflictDetectionUseCase: ConflictDetectionUseCase,
+    private val conflictDetectionService: ConflictDetectionService,
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) : HabitManagementUseCase {
 
@@ -144,7 +143,7 @@ class HabitManagementService(
     }
 
     private fun detectConflictsForHabit(habit: Habit, date: LocalDate): List<HabitConflict> {
-        return conflictDetectionUseCase.detectAllConflictsForUser(habit.userId, date)
+        return conflictDetectionService.detectAllConflictsForUser(habit.userId, date)
             .filter { it.sourceEvent.eventType == EventType.HABIT && it.sourceEvent.eventId == habit.id.toString() }
             .mapNotNull { it.toHabitConflict() }
     }
