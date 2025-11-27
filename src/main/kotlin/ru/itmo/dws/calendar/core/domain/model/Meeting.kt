@@ -12,51 +12,28 @@ data class Meeting(
     val creator: UserId,
     val timeSlot: TimeSlot,
     val participants: List<UserId>,
-    val title: String,
-    val description: String? = null,
+    override val title: String,
+    override val description: String? = null,
     val room: RoomId? = null,
-    val priority: Priority = Priority.forMeeting(),
+    override val priority: Priority = Priority.forMeeting(),
     val bufferTime: BufferDuration = BufferDuration.NONE
-) {
+) : SchedulableEvent {
+
+    override val eventId: String get() = id.toString()
+    override val eventType: EventType get() = EventType.MEETING
+    override val affectedUsers: List<UserId> get() = participants
+
     init {
         require(title.isNotBlank()) { "Meeting title cannot be blank" }
         require(participants.isNotEmpty()) { "Meeting must have at least one participant" }
         require(participants.contains(creator)) { "Creator must be among participants" }
     }
 
-    fun effectiveTimeSlot(): TimeSlot {
+    override fun effectiveTimeSlot(): TimeSlot {
         return if (bufferTime.hasBuffer()) {
             timeSlot.withBuffer(bufferTime)
         } else {
             timeSlot
         }
     }
-
-    fun conflictsWith(other: TimeSlot): Boolean {
-        return effectiveTimeSlot().overlapsWith(other)
-    }
-
-    fun conflictsWith(other: Meeting): Boolean {
-        return effectiveTimeSlot().overlapsWith(other.effectiveTimeSlot())
-    }
-
-    fun reschedule(newTimeSlot: TimeSlot): Meeting {
-        return copy(timeSlot = newTimeSlot)
-    }
-
-    fun updateParticipants(newParticipants: List<UserId>): Meeting {
-        return copy(participants = newParticipants)
-    }
-
-    fun updateBufferTime(newBufferTime: BufferDuration): Meeting {
-        return copy(bufferTime = newBufferTime)
-    }
-
-    fun hasParticipant(userId: UserId): Boolean {
-        return participants.contains(userId)
-    }
-
-    fun participantCount(): Int = participants.size
-
-    fun withPriority(newPriority: Priority): Meeting = copy(priority = newPriority)
 }

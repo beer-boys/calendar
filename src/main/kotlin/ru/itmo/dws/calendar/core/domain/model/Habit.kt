@@ -3,8 +3,6 @@ package ru.itmo.dws.calendar.core.domain.model
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import ru.itmo.dws.calendar.core.domain.valueobject.BufferDuration
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitFlexibilityWindow
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
@@ -16,21 +14,26 @@ import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 data class Habit(
     val id: HabitId,
     val userId: UserId,
-    val title: String,
-    val description: String? = null,
+    override val title: String,
+    override val description: String? = null,
     val duration: Duration,
     val recurrenceRule: RecurrenceRule,
     val flexibilityWindow: HabitFlexibilityWindow,
-    val priority: Priority = Priority.forHabit(),
+    override val priority: Priority = Priority.forHabit(),
     val currentTimeSlot: TimeSlot? = null,
     val bufferTime: BufferDuration = BufferDuration.NONE
-) {
+) : SchedulableEvent {
+
+    override val eventId: String get() = id.toString()
+    override val eventType: EventType get() = EventType.HABIT
+    override val affectedUsers: List<UserId> get() = listOf(userId)
+
     init {
         require(title.isNotBlank()) { "Habit title cannot be blank" }
         require(!duration.isNegative && !duration.isZero) { "Habit duration must be positive" }
     }
 
-    fun effectiveTimeSlot(): TimeSlot? {
+    override fun effectiveTimeSlot(): TimeSlot? {
         return currentTimeSlot?.let {
             if (bufferTime.hasBuffer()) {
                 it.withBuffer(bufferTime)
@@ -61,52 +64,6 @@ data class Habit(
 
     fun clearTimeSlot(): Habit {
         return copy(currentTimeSlot = null)
-    }
-
-    fun conflictsWith(timeSlot: TimeSlot): Boolean {
-        val effectiveSlot = effectiveTimeSlot() ?: return false
-        return effectiveSlot.overlapsWith(timeSlot)
-    }
-
-    fun conflictsWith(meeting: Meeting): Boolean {
-        return conflictsWith(meeting.effectiveTimeSlot())
-    }
-
-    fun conflictsWith(focusTime: FocusTime): Boolean {
-        return focusTime.userId == userId && conflictsWith(focusTime.timeSlot)
-    }
-
-    fun conflictsWith(other: Habit): Boolean {
-        if (other.id == id || other.userId != userId) return false
-        val otherSlot = other.effectiveTimeSlot() ?: return false
-        return conflictsWith(otherSlot)
-    }
-
-    fun generatePossibleSlots(
-        date: LocalDate,
-        zoneId: ZoneId = ZoneId.systemDefault(),
-        interval: Duration = Duration.ofMinutes(15)
-    ): List<TimeSlot> {
-        if (!shouldOccurOn(date)) {
-            return emptyList()
-        }
-
-        val slots = mutableListOf<TimeSlot>()
-        var currentStart = ZonedDateTime.of(date, flexibilityWindow.earliestTime, zoneId)
-        val latestEnd = ZonedDateTime.of(date, flexibilityWindow.latestTime, zoneId)
-
-        while (true) {
-            val slotEnd = currentStart.plus(duration)
-            if (slotEnd.isAfter(latestEnd)) break
-
-            val slot = TimeSlot(currentStart, slotEnd)
-            if (isWithinFlexibilityWindow(slot)) {
-                slots.add(slot)
-            }
-            currentStart = currentStart.plus(interval)
-        }
-
-        return slots
     }
 
     fun canMoveToDifferentDay(): Boolean = flexibilityWindow.allowCrossDayMove
