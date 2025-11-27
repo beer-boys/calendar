@@ -20,11 +20,11 @@ data class EventConflict(
             other: SchedulableEvent,
             date: LocalDate
         ): EventConflict? {
-            val sourceSlot = source.effectiveTimeSlot() ?: return null
-            val otherSlot = other.effectiveTimeSlot() ?: return null
+            val sourceSlot = source.effectiveTimeSlot()
+            val otherSlot = other.effectiveTimeSlot()
 
-            if (!sourceSlot.overlapsWith(otherSlot)) return null
-            if (!source.hasCommonUsers(other)) return null
+            if (sourceSlot == null || otherSlot == null) return null
+            if (!sourceSlot.overlapsWith(otherSlot) || !source.hasCommonUsers(other)) return null
 
             val overlapStart = maxOf(sourceSlot.start, otherSlot.start)
             val overlapEnd = minOf(sourceSlot.end, otherSlot.end)
