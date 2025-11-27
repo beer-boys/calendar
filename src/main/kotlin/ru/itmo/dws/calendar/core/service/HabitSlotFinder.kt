@@ -6,11 +6,8 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlin.math.abs
-import ru.itmo.dws.calendar.core.domain.model.CalendarEvent
-import ru.itmo.dws.calendar.core.domain.model.FocusTime
-import ru.itmo.dws.calendar.core.domain.model.Habit
-import ru.itmo.dws.calendar.core.domain.model.Meeting
 import ru.itmo.dws.calendar.core.domain.model.ProposedSlot
+import ru.itmo.dws.calendar.core.domain.model.SchedulableEvent
 import ru.itmo.dws.calendar.core.domain.model.SlotTradeoff
 import ru.itmo.dws.calendar.core.domain.valueobject.BufferDuration
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitFlexibilityWindow
@@ -69,6 +66,15 @@ class HabitSlotFinder(
             .take(maxSlots)
     }
 
+    fun collectOccupiedSlots(
+        events: List<SchedulableEvent>,
+        excludeEventId: String? = null
+    ): List<TimeSlot> {
+        return events
+            .filter { excludeEventId == null || it.eventId != excludeEventId }
+            .mapNotNull { it.effectiveTimeSlot() }
+    }
+
     private fun findAllAvailableSlots(
         duration: Duration,
         flexibilityWindow: HabitFlexibilityWindow,
@@ -98,31 +104,6 @@ class HabitSlotFinder(
             slots.add(TimeSlot(currentStart, slotEnd))
             currentStart = currentStart.plus(slotInterval)
         }
-
-        return slots
-    }
-
-    fun collectOccupiedSlots(
-        meetings: List<Meeting>,
-        habits: List<Habit>,
-        focusTimes: List<FocusTime>,
-        calendarEvents: List<CalendarEvent> = emptyList(),
-        excludeHabitId: ru.itmo.dws.calendar.core.domain.valueobject.HabitId? = null
-    ): List<TimeSlot> {
-        val slots = mutableListOf<TimeSlot>()
-
-        meetings.forEach { slots.add(it.effectiveTimeSlot()) }
-
-        habits
-            .filter { excludeHabitId == null || it.id != excludeHabitId }
-            .mapNotNull { it.effectiveTimeSlot() }
-            .forEach { slots.add(it) }
-
-        focusTimes.forEach { slots.add(it.timeSlot) }
-
-        calendarEvents
-            .filter { it.isBlocking() }
-            .forEach { slots.add(it.timeSlot) }
 
         return slots
     }

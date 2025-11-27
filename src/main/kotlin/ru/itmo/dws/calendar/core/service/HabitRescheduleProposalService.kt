@@ -14,16 +14,12 @@ import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 import ru.itmo.dws.calendar.core.port.input.HabitRescheduleProposalUseCase
-import ru.itmo.dws.calendar.core.port.output.CalendarProvider
-import ru.itmo.dws.calendar.core.port.output.FocusTimeRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
-import ru.itmo.dws.calendar.core.port.output.MeetingRepository
+import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
 
 class HabitRescheduleProposalService(
     private val habitRepository: HabitRepository,
-    private val meetingRepository: MeetingRepository,
-    private val focusTimeRepository: FocusTimeRepository,
-    private val calendarProvider: CalendarProvider,
+    private val eventProviders: List<SchedulableEventProvider>,
     private val habitSlotFinder: HabitSlotFinder,
     private val zoneId: ZoneId = ZoneId.systemDefault(),
     private val config: RescheduleProposalConfig = RescheduleProposalConfig.default()
@@ -36,7 +32,7 @@ class HabitRescheduleProposalService(
             ?: throw IllegalArgumentException("Habit not found: ${conflict.habitId}")
 
         val date = conflict.affectedDate
-        val occupiedSlots = collectOccupiedSlotsExcludingHabit(habit, date)
+        val occupiedSlots = collectOccupiedSlotsExcludingHabit(habit.userId, date, habit.id.toString())
 
         val allOccupiedSlots = occupiedSlots + conflict.conflictingEvent.timeSlot
 
@@ -164,7 +160,11 @@ class HabitRescheduleProposalService(
             )
         }
 
-        val occupiedSlots = collectOccupiedSlotsExcludingHabit(habit, proposal.conflict.affectedDate)
+        val occupiedSlots = collectOccupiedSlotsExcludingHabit(
+            habit.userId,
+            proposal.conflict.affectedDate,
+            habit.id.toString()
+        )
         val effectiveSlot = if (habit.bufferTime.hasBuffer()) {
             timeSlot.withBuffer(habit.bufferTime)
         } else {
@@ -278,26 +278,15 @@ class HabitRescheduleProposalService(
         )
     }
 
-    private fun collectOccupiedSlotsExcludingHabit(habit: Habit, date: LocalDate): List<TimeSlot> {
-        val dayTimeSlot = createDayTimeSlot(date)
-
-        val meetings = meetingRepository.findMeetings(habit.userId, dayTimeSlot)
-        val habits = habitRepository.findHabitsForDate(habit.userId, date)
-        val focusTimes = focusTimeRepository.findFocusTimes(habit.userId, dayTimeSlot)
-
-        val calendarEvents = try {
-            calendarProvider.getEvents(habit.userId, dayTimeSlot)
-        } catch (e: Exception) {
-            emptyList()
+    private fun collectOccupiedSlotsExcludingHabit(
+        userId: UserId,
+        date: LocalDate,
+        excludeEventId: String
+    ): List<TimeSlot> {
+        val allEvents = eventProviders.flatMap { provider ->
+            provider.getEventsForUserOnDate(userId, date)
         }
-
-        return habitSlotFinder.collectOccupiedSlots(
-            meetings = meetings,
-            habits = habits,
-            focusTimes = focusTimes,
-            calendarEvents = calendarEvents,
-            excludeHabitId = habit.id
-        )
+        return habitSlotFinder.collectOccupiedSlots(allEvents, excludeEventId)
     }
 
     private fun findAlternativeDates(habit: Habit, originalDate: LocalDate, maxDays: Int): List<LocalDate> {
@@ -306,7 +295,11 @@ class HabitRescheduleProposalService(
         for (offset in 1..maxDays) {
             val nextDate = originalDate.plusDays(offset.toLong())
             if (habit.shouldOccurOn(nextDate)) {
-                val occupiedSlots = collectOccupiedSlotsExcludingHabit(habit, nextDate)
+                val occupiedSlots = collectOccupiedSlotsExcludingHabit(
+                    habit.userId,
+                    nextDate,
+                    habit.id.toString()
+                )
                 val availableSlot = habitSlotFinder.findOptimalSlot(
                     duration = habit.duration,
                     flexibilityWindow = habit.flexibilityWindow,
@@ -322,12 +315,6 @@ class HabitRescheduleProposalService(
         }
 
         return alternativeDates
-    }
-
-    private fun createDayTimeSlot(date: LocalDate): TimeSlot {
-        val startOfDay = date.atStartOfDay(zoneId)
-        val endOfDay = date.plusDays(1).atStartOfDay(zoneId)
-        return TimeSlot(startOfDay, endOfDay)
     }
 
     private fun createFailedResult(

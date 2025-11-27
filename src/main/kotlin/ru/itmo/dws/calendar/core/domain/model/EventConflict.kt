@@ -2,7 +2,6 @@ package ru.itmo.dws.calendar.core.domain.model
 
 import java.time.Instant
 import java.time.LocalDate
-import ru.itmo.dws.calendar.core.domain.valueobject.Priority
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 

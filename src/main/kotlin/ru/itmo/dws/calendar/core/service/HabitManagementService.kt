@@ -3,28 +3,26 @@ package ru.itmo.dws.calendar.core.service
 import java.time.LocalDate
 import java.time.ZoneId
 import ru.itmo.dws.calendar.core.domain.model.CreateHabitRequest
+import ru.itmo.dws.calendar.core.domain.model.EventType
 import ru.itmo.dws.calendar.core.domain.model.Habit
 import ru.itmo.dws.calendar.core.domain.model.HabitConflict
 import ru.itmo.dws.calendar.core.domain.model.UpdateHabitRequest
+import ru.itmo.dws.calendar.core.domain.model.toHabitConflict
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
-import ru.itmo.dws.calendar.core.port.input.HabitConflictDetectionUseCase
+import ru.itmo.dws.calendar.core.port.input.ConflictDetectionUseCase
 import ru.itmo.dws.calendar.core.port.input.HabitCreationResult
 import ru.itmo.dws.calendar.core.port.input.HabitCreationStatus
 import ru.itmo.dws.calendar.core.port.input.HabitManagementUseCase
-import ru.itmo.dws.calendar.core.port.output.CalendarProvider
-import ru.itmo.dws.calendar.core.port.output.FocusTimeRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
-import ru.itmo.dws.calendar.core.port.output.MeetingRepository
+import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
 
 class HabitManagementService(
     private val habitRepository: HabitRepository,
-    private val meetingRepository: MeetingRepository,
-    private val focusTimeRepository: FocusTimeRepository,
-    private val calendarProvider: CalendarProvider,
+    private val eventProviders: List<SchedulableEventProvider>,
     private val habitSlotFinder: HabitSlotFinder,
-    private val conflictDetectionUseCase: HabitConflictDetectionUseCase,
+    private val conflictDetectionUseCase: ConflictDetectionUseCase,
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) : HabitManagementUseCase {
 
@@ -121,7 +119,7 @@ class HabitManagementService(
         date: LocalDate,
         preferredStartTime: java.time.LocalTime?
     ): TimeSlot? {
-        val occupiedSlots = collectOccupiedSlotsForUser(habit.userId, date, habit.id)
+        val occupiedSlots = collectOccupiedSlotsForUser(habit.userId, date, habit.id.toString())
 
         return habitSlotFinder.findOptimalSlot(
             duration = habit.duration,
@@ -137,35 +135,17 @@ class HabitManagementService(
     private fun collectOccupiedSlotsForUser(
         userId: UserId,
         date: LocalDate,
-        excludeHabitId: HabitId? = null
+        excludeEventId: String? = null
     ): List<TimeSlot> {
-        val startOfDay = date.atStartOfDay(zoneId).toInstant()
-        val endOfDay = date.plusDays(1).atStartOfDay(zoneId).toInstant()
-        val dayTimeSlot = TimeSlot(
-            start = startOfDay.atZone(zoneId),
-            end = endOfDay.atZone(zoneId)
-        )
-
-        val meetings = meetingRepository.findMeetings(userId, dayTimeSlot)
-        val habits = habitRepository.findHabitsForDate(userId, date)
-        val focusTimes = focusTimeRepository.findFocusTimes(userId, dayTimeSlot)
-
-        val calendarEvents = try {
-            calendarProvider.getEvents(userId, dayTimeSlot)
-        } catch (e: Exception) {
-            emptyList()
+        val allEvents = eventProviders.flatMap { provider ->
+            provider.getEventsForUserOnDate(userId, date)
         }
-
-        return habitSlotFinder.collectOccupiedSlots(
-            meetings = meetings,
-            habits = habits,
-            focusTimes = focusTimes,
-            calendarEvents = calendarEvents,
-            excludeHabitId = excludeHabitId
-        )
+        return habitSlotFinder.collectOccupiedSlots(allEvents, excludeEventId)
     }
 
     private fun detectConflictsForHabit(habit: Habit, date: LocalDate): List<HabitConflict> {
-        return conflictDetectionUseCase.detectConflictsForHabit(habit.id, date)
+        return conflictDetectionUseCase.detectAllConflictsForUser(habit.userId, date)
+            .filter { it.sourceEvent.eventType == EventType.HABIT && it.sourceEvent.eventId == habit.id.toString() }
+            .mapNotNull { it.toHabitConflict() }
     }
 }
