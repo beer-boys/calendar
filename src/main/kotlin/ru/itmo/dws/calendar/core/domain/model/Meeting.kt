@@ -1,10 +1,11 @@
-package ru.itmo.dws.calendar.domain.model
+package ru.itmo.dws.calendar.core.domain.model
 
-import ru.itmo.dws.calendar.domain.valueobject.BufferDuration
-import ru.itmo.dws.calendar.domain.valueobject.MeetingId
-import ru.itmo.dws.calendar.domain.valueobject.RoomId
-import ru.itmo.dws.calendar.domain.valueobject.TimeSlot
-import ru.itmo.dws.calendar.domain.valueobject.UserId
+import ru.itmo.dws.calendar.core.domain.valueobject.BufferDuration
+import ru.itmo.dws.calendar.core.domain.valueobject.MeetingId
+import ru.itmo.dws.calendar.core.domain.valueobject.Priority
+import ru.itmo.dws.calendar.core.domain.valueobject.RoomId
+import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
+import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 
 data class Meeting(
     val id: MeetingId,
@@ -14,6 +15,7 @@ data class Meeting(
     val title: String,
     val description: String? = null,
     val room: RoomId? = null,
+    val priority: Priority = Priority.forMeeting(),
     val bufferTime: BufferDuration = BufferDuration.NONE
 ) {
     init {
@@ -55,4 +57,6 @@ data class Meeting(
     }
 
     fun participantCount(): Int = participants.size
+
+    fun withPriority(newPriority: Priority): Meeting = copy(priority = newPriority)
 }

@@ -1,12 +1,12 @@
-package ru.itmo.dws.calendar.domain.model
+package ru.itmo.dws.calendar.core.domain.model
 
 import java.time.Duration
-import ru.itmo.dws.calendar.domain.valueobject.BufferDuration
-import ru.itmo.dws.calendar.domain.valueobject.MeetingPriority
-import ru.itmo.dws.calendar.domain.valueobject.RoomId
-import ru.itmo.dws.calendar.domain.valueobject.SchedulingConstraints
-import ru.itmo.dws.calendar.domain.valueobject.TimeSlot
-import ru.itmo.dws.calendar.domain.valueobject.UserId
+import ru.itmo.dws.calendar.core.domain.valueobject.BufferDuration
+import ru.itmo.dws.calendar.core.domain.valueobject.Priority
+import ru.itmo.dws.calendar.core.domain.valueobject.RoomId
+import ru.itmo.dws.calendar.core.domain.valueobject.SchedulingConstraints
+import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
+import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 
 data class MeetingRequest(
     val creator: UserId,
@@ -19,7 +19,7 @@ data class MeetingRequest(
     val room: RoomId? = null,
     val bufferTime: BufferDuration = BufferDuration.NONE,
     val constraints: SchedulingConstraints = SchedulingConstraints(),
-    val priority: MeetingPriority = MeetingPriority.NORMAL
+    val priority: Priority = Priority.forMeeting()
 ) {
     fun toDraft(): MeetingDraft {
         return MeetingDraft(
