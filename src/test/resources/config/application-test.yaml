@@ -1,0 +1,4 @@
+jwt:
+  secret:
+    access: nRrSCiGWda9XH3Pd67sC6XXjWmUh96efJDBTz5pEYj4=
+    refresh: ak/He48UAiFWb/nIwnAAnKnRt5x4PNXLkvKzQVAqF/k=

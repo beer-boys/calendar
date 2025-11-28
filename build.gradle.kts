@@ -49,6 +49,9 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.engine)
+
+    testImplementation(libs.testcontainers)
+    testImplementation(libs.testcontainers.postgres)
 }
 
 detekt {

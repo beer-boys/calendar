@@ -1,6 +1,7 @@
 [versions]
 kotlin = "2.0.10"
 detekt = "1.23.7"
+testcontainers = "2.0.1"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -24,6 +25,9 @@ spring-starter-test = { module = "org.springframework.boot:spring-boot-starter-t
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
+
+testcontainers = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
+testcontainers-postgres = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 
 fasterxml-jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 
