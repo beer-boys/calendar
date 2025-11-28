@@ -1,12 +1,11 @@
 package ru.itmo.dws.calendar.service.notification
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import java.time.LocalDateTime
-import kotlin.math.pow
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
+import ru.itmo.dws.calendar.configuration.properties.OutboxProperties
 import ru.itmo.dws.calendar.model.NotificationOutbox
 import ru.itmo.dws.calendar.model.NotificationOutboxStatus
 import ru.itmo.dws.calendar.model.NotificationOutboxStatus.FAILED
@@ -16,24 +15,19 @@ import ru.itmo.dws.calendar.repository.NotificationOutboxRepository
 import ru.itmo.dws.calendar.service.notification.email.EmailService
 import ru.itmo.dws.calendar.service.notification.model.EmailNotificationPayload
 import ru.itmo.dws.calendar.service.notification.model.NotificationPayload
+import java.time.LocalDateTime
+import kotlin.math.pow
 
 @Service
 class NotificationOutboxService(
     private val emailService: EmailService,
     private val objectMapper: ObjectMapper,
+    private val outboxProperties: OutboxProperties,
     private val transactionTemplate: TransactionTemplate,
     private val outboxRepository: NotificationOutboxRepository,
 ) {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
-
-    // todo extract to properties
-    companion object {
-        private const val BATCH_SIZE = 50
-        private const val BACKOFF_BASE = 2.0
-        private const val MAX_RETRIES = 5
-        private const val STUCK_THRESHOLD_MINUTES = 10L
-    }
 
     @Transactional
     fun schedule(payload: NotificationPayload) {
@@ -48,7 +42,7 @@ class NotificationOutboxService(
     }
 
     fun processPendingTasks() {
-        val tasks = outboxRepository.pollTasks(batchSize = BATCH_SIZE)
+        val tasks = outboxRepository.pollTasks(batchSize = outboxProperties.batchSize)
 
         tasks.forEach { task ->
             processSingleTask(task)
@@ -56,7 +50,7 @@ class NotificationOutboxService(
     }
 
     fun rescueStuckTasks() {
-        val stuckThreshold = LocalDateTime.now().minusMinutes(STUCK_THRESHOLD_MINUTES)
+        val stuckThreshold = LocalDateTime.now().minus(outboxProperties.stuckThreshold)
 
         val rescued = transactionTemplate.execute {
             outboxRepository.rescueStuckTasks(stuckThreshold)
@@ -86,7 +80,7 @@ class NotificationOutboxService(
 
             transactionTemplate.executeWithoutResult {
                 val failedTask = task.copy(
-                    status = if (task.attemptsCount >= MAX_RETRIES) FAILED else PENDING,
+                    status = if (task.attemptsCount >= outboxProperties.maxRetries) FAILED else PENDING,
                     nextRetryAt = nextTry,
                     attemptsCount = task.attemptsCount + 1,
                     updatedAt = LocalDateTime.now(),
@@ -114,7 +108,7 @@ class NotificationOutboxService(
     }
 
     private fun calculateNextRetry(attempts: Int): LocalDateTime {
-        val minutes = BACKOFF_BASE.pow(attempts).toLong()
+        val minutes = outboxProperties.backoffBase.pow(attempts).toLong()
         return LocalDateTime.now().plusMinutes(minutes)
     }
 }

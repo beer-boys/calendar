@@ -77,8 +77,13 @@ logging:
   level:
     root: INFO
 
-
 jwt:
   secret:
     access: ${JWT_SECRET_ACCESS:example}
     refresh: ${JWT_SECRET_REFRESH:example}
+
+outbox:
+  batchSize: 50
+  maxRetries: 5
+  backoffBase: 2.0
+  stuckThreshold: 10m
