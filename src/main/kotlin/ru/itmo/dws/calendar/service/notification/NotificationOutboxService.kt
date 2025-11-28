@@ -1,6 +1,8 @@
 package ru.itmo.dws.calendar.service.notification
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import java.time.LocalDateTime
+import kotlin.math.pow
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -14,8 +16,6 @@ import ru.itmo.dws.calendar.repository.NotificationOutboxRepository
 import ru.itmo.dws.calendar.service.notification.email.EmailService
 import ru.itmo.dws.calendar.service.notification.model.EmailNotificationPayload
 import ru.itmo.dws.calendar.service.notification.model.NotificationPayload
-import java.time.LocalDateTime
-import kotlin.math.pow
 
 @Service
 class NotificationOutboxService(
