@@ -18,7 +18,7 @@ class Scheduler(private val notificationOutboxService: NotificationOutboxService
      *
      * Due to skip lock and transaction controller, this method is safe to run on multiple instances.
      */
-    @Scheduled(fixedDelay = 15, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedDelayString = "\${outbox.pollInterval}")
     fun processNotificationOutbox() {
         notificationOutboxService.processPendingTasks()
     }
@@ -28,7 +28,7 @@ class Scheduler(private val notificationOutboxService: NotificationOutboxService
      *
      * Finds tasks that are stuck in IN_PROGRESS status and resets them to PENDING.
      */
-    @Scheduled(fixedRate = 5, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @Scheduled(fixedDelayString = "\${outbox.rescueInterval}")
     fun rescueNotificationOutbox() {
         notificationOutboxService.rescueStuckTasks()
     }

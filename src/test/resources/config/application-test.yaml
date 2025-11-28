@@ -7,3 +7,8 @@ spring:
   mail:
     username: be-be-be
     password: pu-pu-pu
+
+outbox:
+  pollInterval: 100ms
+  stuckThreshold: 3s
+  rescueInterval: 2s

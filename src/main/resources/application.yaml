@@ -39,6 +39,11 @@ spring:
     password: <pass>
     properties:
       from: ${spring.mail.username}
+      mail:
+        smtp:
+          connectiontimeout: 1000
+          timeout: 5000
+          writetimeout: 5000
 
 server:
   port: 8080
@@ -87,3 +92,5 @@ outbox:
   maxRetries: 5
   backoffBase: 2.0
   stuckThreshold: 10m
+  pollInterval: 15s
+  rescueInterval: 5m
