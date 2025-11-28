@@ -33,10 +33,7 @@ dependencies {
     implementation("com.google.oauth-client:google-oauth-client-jetty:1.39.0")
     implementation("com.google.apis:google-api-services-calendar:v3-rev20220715-2.0.0")
 
-    // todo create bundle
-    implementation("io.jsonwebtoken:jjwt-api:0.13.0")
-    implementation("io.jsonwebtoken:jjwt-impl:0.13.0")
-    implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
+    implementation(libs.bundles.jjwt)
 }
 
 dependencies {
