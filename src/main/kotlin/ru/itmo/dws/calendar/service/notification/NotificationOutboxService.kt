@@ -27,6 +27,7 @@ class NotificationOutboxService(
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
+    // todo extract to properties
     companion object {
         private const val BATCH_SIZE = 50
         private const val BACKOFF_BASE = 2.0
@@ -43,7 +44,7 @@ class NotificationOutboxService(
             type = EMAIL,
         )
 
-        outboxRepository.save(entity)
+        outboxRepository.insert(entity)
     }
 
     fun processPendingTasks() {
@@ -77,7 +78,7 @@ class NotificationOutboxService(
                     updatedAt = LocalDateTime.now(),
                 )
 
-                outboxRepository.save(doneTask)
+                outboxRepository.update(doneTask)
             }
         } catch (e: Exception) {
             logger.error("Error processing task: ${task.id}", e)
@@ -91,7 +92,7 @@ class NotificationOutboxService(
                     updatedAt = LocalDateTime.now(),
                 )
 
-                outboxRepository.save(failedTask)
+                outboxRepository.update(failedTask)
             }
         }
     }

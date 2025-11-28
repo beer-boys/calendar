@@ -24,19 +24,22 @@ spring-starter-actuator = { module = "org.springframework.boot:spring-boot-start
 spring-starter-email = { module = "org.springframework.boot:spring-boot-starter-mail" }
 spring-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 
-junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
-junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
-junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
+fasterxml-jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 
 jjwt-api = { group = "io.jsonwebtoken", name = "jjwt-api", version.ref = "jjwt" }
 jjwt-impl = { group = "io.jsonwebtoken", name = "jjwt-impl", version.ref = "jjwt" }
 jjwt-jackson = { group = "io.jsonwebtoken", name = "jjwt-jackson", version.ref = "jjwt" }
 
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
+
+mockk = { module = "io.mockk:mockk", version = "1.14.6" }
+spring-mockk = { module = "com.ninja-squad:springmockk", version = "4.0.2" }
+awaitility-kotlin = { module = "org.awaitility:awaitility-kotlin", version = "4.3.0" }
+
 testcontainers = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
 testcontainers-postgres = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
-
-fasterxml-jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
-
 
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 liquibase-core = { module = "org.liquibase:liquibase-core" }

@@ -27,7 +27,7 @@ dependencies {
     implementation(libs.fasterxml.jackson.kotlin)
     implementation(libs.kotlin.reflect)
 
-    runtimeOnly(libs.postgresql)
+    implementation(libs.postgresql)
     implementation(libs.liquibase.core)
 
     implementation("com.google.api-client:google-api-client:2.8.1")
@@ -47,6 +47,10 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.engine)
+
+    testImplementation(libs.mockk)
+    testImplementation(libs.spring.mockk)
+    testImplementation(libs.awaitility.kotlin)
 
     testImplementation(libs.testcontainers)
     testImplementation(libs.testcontainers.postgres)
