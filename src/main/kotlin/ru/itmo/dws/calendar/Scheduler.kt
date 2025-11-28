@@ -1,6 +1,5 @@
 package ru.itmo.dws.calendar
 
-import java.util.concurrent.TimeUnit
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.scheduling.annotation.EnableScheduling

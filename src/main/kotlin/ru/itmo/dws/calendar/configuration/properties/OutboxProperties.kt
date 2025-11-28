@@ -1,7 +1,7 @@
 package ru.itmo.dws.calendar.configuration.properties
 
-import org.springframework.boot.context.properties.ConfigurationProperties
 import java.time.Duration
+import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("outbox")
 data class OutboxProperties(
