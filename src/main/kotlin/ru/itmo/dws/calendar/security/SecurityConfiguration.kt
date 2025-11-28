@@ -23,11 +23,11 @@ import ru.itmo.dws.calendar.configuration.BasePath.WHITE_LIST
 @Configuration
 @EnableWebSecurity
 @Suppress("SpreadOperator", "MagicNumber", "ForbiddenComment")
-open class SecurityConfiguration {
+class SecurityConfiguration {
 
     @Bean
     @Order(10)
-    open fun baseAuthChain(
+    fun baseAuthChain(
         http: HttpSecurity,
         jwtAuthenticationFilter: JwtAuthenticationFilter,
     ): SecurityFilterChain {
@@ -43,7 +43,7 @@ open class SecurityConfiguration {
 
     @Bean
     @Order(1)
-    open fun googleOAuth2Chain(http: HttpSecurity): SecurityFilterChain {
+    fun googleOAuth2Chain(http: HttpSecurity): SecurityFilterChain {
         return http
             .csrf { it.disable() }
             .securityMatcher(*GOOGLE_WHITE_LIST.toTypedArray())
@@ -60,10 +60,10 @@ open class SecurityConfiguration {
     }
 
     @Bean
-    open fun bCryptPasswordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
+    fun bCryptPasswordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
     @Bean
-    open fun authenticationProvider(
+    fun authenticationProvider(
         userDetailsService: UserDetailsService,
         passwordEncoder: PasswordEncoder
     ): AuthenticationProvider {
@@ -74,7 +74,7 @@ open class SecurityConfiguration {
     }
 
     @Bean
-    open fun authenticationManager(
+    fun authenticationManager(
         configuration: AuthenticationConfiguration,
         authenticationProvider: AuthenticationProvider,
     ): AuthenticationManager {
@@ -82,7 +82,7 @@ open class SecurityConfiguration {
     }
 
     @Bean
-    open fun roleHierarchy(): RoleHierarchy {
+    fun roleHierarchy(): RoleHierarchy {
         val roleHierarchy = RoleHierarchyImpl.fromHierarchy(
             "ADMIN > USER"
         )

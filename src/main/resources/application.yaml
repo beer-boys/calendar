@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: dev,local
   application:
     name: calendar
   datasource:
@@ -29,6 +31,46 @@ spring:
           google:
             authorization-uri: https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent
             token-uri: https://oauth2.googleapis.com/token
+
+server:
+  port: 8080
+  servlet:
+    context-path: /${spring.application.name}
+  shutdown: graceful
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: info, health, metrics, prometheus, scheduledtasks
+  endpoint:
+    health:
+      enabled: true
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          additional-path: server:/readyz
+          include: readinessState
+    prometheus:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      env: qa
+
+logging:
+  level:
+    root: INFO
+
 
 jwt:
   secret:

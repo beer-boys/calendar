@@ -6,10 +6,10 @@ import org.springframework.context.annotation.Configuration
 import ru.itmo.dws.calendar.service.util.ClockService
 
 @Configuration
-open class ClockConfiguration {
+class ClockConfiguration {
 
     @Bean
-    open fun clockService(): ClockService {
+    fun clockService(): ClockService {
         return ClockService(Clock.systemUTC())
     }
 }

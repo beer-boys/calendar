@@ -5,10 +5,10 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-open class GsonConfiguration {
+class GsonConfiguration {
 
     @Bean
-    open fun gsonFactory(): GsonFactory {
+    fun gsonFactory(): GsonFactory {
         return GsonFactory.getDefaultInstance()
     }
 }
