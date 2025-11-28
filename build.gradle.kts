@@ -22,6 +22,7 @@ dependencies {
     implementation(libs.spring.starter.data.jdbc)
     implementation(libs.spring.starter.oauth2.client)
     implementation(libs.spring.starter.actuator)
+    implementation(libs.spring.starter.email)
 
     implementation(libs.fasterxml.jackson.kotlin)
     implementation(libs.kotlin.reflect)

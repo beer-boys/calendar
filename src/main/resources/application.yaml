@@ -31,11 +31,17 @@ spring:
           google:
             authorization-uri: https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent
             token-uri: https://oauth2.googleapis.com/token
+  mail:
+    host: smtp.yandex.ru
+    port: 465
+    protocol: smtps
+    username: <mail>
+    password: <pass>
+    properties:
+      from: ${spring.mail.username}
 
 server:
   port: 8080
-  servlet:
-    context-path: /${spring.application.name}
   shutdown: graceful
 
 management:

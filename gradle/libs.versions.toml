@@ -21,6 +21,7 @@ spring-starter-web = { module = "org.springframework.boot:spring-boot-starter-we
 spring-starter-data-jdbc = { module = "org.springframework.boot:spring-boot-starter-data-jdbc" }
 spring-starter-oauth2-client = { module = "org.springframework.boot:spring-boot-starter-oauth2-client" }
 spring-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-starter-email = { module = "org.springframework.boot:spring-boot-starter-mail" }
 spring-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
