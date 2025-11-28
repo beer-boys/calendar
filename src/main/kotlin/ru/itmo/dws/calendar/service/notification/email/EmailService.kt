@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service
 @Service
 class EmailService(private val mailSender: JavaMailSenderImpl) {
 
+    @Suppress("UseCheckOrError")
     private val from: String = mailSender.javaMailProperties["from"] as? String
         ?: throw IllegalStateException("smtp server login not set")
 
