@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.spring)
 
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
@@ -9,12 +10,6 @@ plugins {
 
 group = "ru.itmo.dws"
 description = "calendar"
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
 
 repositories {
     mavenCentral()
@@ -27,20 +22,19 @@ dependencies {
     implementation(libs.spring.starter.data.jdbc)
     implementation(libs.spring.starter.oauth2.client)
     implementation(libs.spring.starter.actuator)
+    implementation(libs.spring.starter.email)
 
     implementation(libs.fasterxml.jackson.kotlin)
     implementation(libs.kotlin.reflect)
 
+    implementation(libs.postgresql)
     implementation(libs.liquibase.core)
 
-    implementation(libs.postgresql)
     implementation("com.google.api-client:google-api-client:2.8.1")
     implementation("com.google.oauth-client:google-oauth-client-jetty:1.39.0")
     implementation("com.google.apis:google-api-services-calendar:v3-rev20220715-2.0.0")
 
-    implementation("io.jsonwebtoken:jjwt-api:0.13.0")
-    implementation("io.jsonwebtoken:jjwt-impl:0.13.0")
-    implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
+    implementation(libs.bundles.jjwt)
 }
 
 dependencies {
@@ -53,6 +47,13 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.engine)
+
+    testImplementation(libs.mockk)
+    testImplementation(libs.spring.mockk)
+    testImplementation(libs.awaitility.kotlin)
+
+    testImplementation(libs.testcontainers)
+    testImplementation(libs.testcontainers.postgres)
 }
 
 detekt {
@@ -63,6 +64,7 @@ detekt {
 }
 
 kotlin {
+    jvmToolchain(21)
     compilerOptions {
         freeCompilerArgs.addAll("-Xjsr305=strict")
     }

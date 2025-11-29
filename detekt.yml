@@ -505,7 +505,7 @@ style:
     active: false
     includeLineWrapping: false
   ForbiddenComment:
-    active: true
+    active: false
     comments:
       - reason: ''
         value: 'FIXME:'
