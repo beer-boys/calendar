@@ -1,7 +1,8 @@
 import ru.itmo.dws.version.VersionConfig
 import ru.itmo.dws.version.mutator.impl.LocalVersionMutator
-import ru.itmo.dws.version.resolver.impl.ConstantVersionResolver
+import ru.itmo.dws.version.resolver.impl.EnvVariableOrDefaultVersionResolver
 import java.net.URI
+import java.time.LocalDate
 import java.util.UUID
 
 plugins {
@@ -25,9 +26,11 @@ repositories {
 
 private fun envOrEmpty(env: String) = System.getenv(env)?.toString() ?: ""
 
-// todo create version resolving
 private val versionConfig = VersionConfig(
-    resolver = ConstantVersionResolver("testing-${UUID.randomUUID()}"),
+    resolver = EnvVariableOrDefaultVersionResolver(
+        "CI_VERSION",
+        LocalDate.now().toString() + "-" + UUID.randomUUID(),
+    ),
     mutators = mutableListOf(
         LocalVersionMutator(project.gradle.startParameter.taskNames),
     )
@@ -112,6 +115,10 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.withType<Jar> {
+    archiveVersion.set(versionConfig.newVersion())
 }
 
 fun gav(provider: Provider<MinimalExternalModuleDependency>): String {
