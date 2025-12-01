@@ -1,4 +1,4 @@
-package ru.itmo.dws.calendar.service
+package ru.itmo.dws.calendar.service.google
 
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import org.springframework.stereotype.Service
