@@ -1,0 +1,12 @@
+services:
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY}:${TAG}
+    container_name: calendar-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    env_file:
+      - .env
