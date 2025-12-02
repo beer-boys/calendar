@@ -1,14 +1,19 @@
-name: build project
+name: CI/CD Pipeline
 
 on:
+  push:
+    branches: [ "master" ]
   pull_request:
-    branches:
-      - master
+    branches: [ "master" ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,8 +25,124 @@ jobs:
           java-version: '21'
           cache: gradle
 
-      - name: grant gradlew execution permission
-        run: chmod +x gradlew
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v5
 
       - name: build
-        run: ./gradlew clean build
+        run: ./gradlew build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: build/**
+
+  build-and-push-docker:
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # allow to push to ghcr.io
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }} # send version to next job
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # Tag strategy:
+          # Master: sha + type=raw (latest)
+          # PR: type=ref (PR number) + RC suffix
+          tags: |
+            type=ref,event=pr,suffix=-RC
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=long,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push-docker
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code (for docker-compose.yml)
+        uses: actions/checkout@v4
+
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+
+      - name: Copy stack to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "./deploy/docker-compose.yaml"
+          target: "/home/${{ secrets.SSH_USER }}/app/"
+
+      - name: Execute remote deploy
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ github.actor }}
+          TAG: ${{ needs.build-and-push-docker.outputs.image_tag }}
+          REGISTRY: ghcr.io
+          IMAGE_NAME: ${{ github.repository }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: GITHUB_TOKEN,USERNAME,TAG,REGISTRY,IMAGE_NAME
+          script: |
+            cd /home/${{ secrets.SSH_USER }}/app/
+            
+            if [ -f "deploy/docker-compose.yaml" ]; then
+              mv -f deploy/docker-compose.yaml .
+              rm -rf deploy
+              echo "compose file moved from deploy folder"
+            fi
+
+            # Login to container registry
+            echo $GITHUB_TOKEN | docker login ghcr.io -u $USERNAME --password-stdin
+
+            # to lower register
+            export GITHUB_REPOSITORY=$(echo $IMAGE_NAME | tr '[:upper:]' '[:lower:]')
+            export TAG=$TAG
+
+            # Pull & Deploy
+            docker compose -f docker-compose.yaml pull app
+            docker compose -f docker-compose.yaml up -d app
+
+            # remove dangling image
+            docker image prune -f
+            
+            docker logout ghcr.io

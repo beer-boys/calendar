@@ -34,6 +34,8 @@ abstract class AbstractIntegrationTest {
             registry.add("spring.liquibase.default-schema") { "public" }
             registry.add("spring.liquibase.user", postgresContainer::getUsername)
             registry.add("spring.liquibase.password", postgresContainer::getPassword)
+
+            registry.add("server.shutdown") { "immediate" }
         }
     }
 }

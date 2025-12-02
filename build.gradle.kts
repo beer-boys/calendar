@@ -1,6 +1,15 @@
+import ru.itmo.dws.version.VersionConfig
+import ru.itmo.dws.version.mutator.impl.LocalVersionMutator
+import ru.itmo.dws.version.resolver.impl.EnvVariableOrDefaultVersionResolver
+import java.net.URI
+import java.time.LocalDate
+import java.util.UUID
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.spring)
+
+    `maven-publish`
 
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
@@ -13,6 +22,40 @@ description = "calendar"
 
 repositories {
     mavenCentral()
+}
+
+private fun envOrEmpty(env: String) = System.getenv(env)?.toString() ?: ""
+
+private val versionConfig = VersionConfig(
+    resolver = EnvVariableOrDefaultVersionResolver(
+        "CI_VERSION",
+        LocalDate.now().toString() + "-" + UUID.randomUUID(),
+    ),
+    mutators = mutableListOf(
+        LocalVersionMutator(project.gradle.startParameter.taskNames),
+    )
+)
+
+version = versionConfig.newVersion()
+
+publishing {
+    publications {
+        create<MavenPublication>(name) {
+            logger.info("create publication $groupId:$artifactId:$version")
+            from(components["java"])
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = URI("https://maven.pkg.github.com/beer-boys/calendar")
+            credentials {
+                username = envOrEmpty("GITHUB_ACTOR")
+                password = envOrEmpty("GITHUB_TOKEN")
+            }
+        }
+    }
 }
 
 dependencies {
@@ -72,6 +115,17 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.withType<Jar> {
+    archiveVersion.set(versionConfig.newVersion())
+}
+
+tasks {
+    // disabling plain jar
+    jar {
+        enabled = false
+    }
 }
 
 fun gav(provider: Provider<MinimalExternalModuleDependency>): String {
