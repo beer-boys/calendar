@@ -85,56 +85,55 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-#  deploy:
-#    needs: build-and-push-docker
-#    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout code (for docker-compose.yml)
-#        uses: actions/checkout@v4
-#
-#      - name: Install SSH Key
-#        uses: shimataro/ssh-key-action@v2
-#        with:
-#          key: ${{ secrets.SSH_PRIVATE_KEY }}
-#          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }} # Или используй ssh-keyscan
-#
-#      - name: Copy stack to server
-#        uses: appleboy/scp-action@v0.1.7
-#        with:
-#          host: ${{ secrets.SSH_HOST }}
-#          username: ${{ secrets.SSH_USER }}
-#          key: ${{ secrets.SSH_PRIVATE_KEY }}
-#          source: "docker-compose.yml"
-#          target: "/home/${{ secrets.SSH_USER }}/app/"
-#
-#      - name: Execute remote deploy
-#        uses: appleboy/ssh-action@v1.0.3
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          USERNAME: ${{ github.actor }}
-#          TAG: ${{ needs.build-and-push-docker.outputs.image_tag }}
-#          REGISTRY: ghcr.io
-#          IMAGE_NAME: ${{ github.repository }}
-#        with:
-#          host: ${{ secrets.SSH_HOST }}
-#          username: ${{ secrets.SSH_USER }}
-#          key: ${{ secrets.SSH_PRIVATE_KEY }}
-#          envs: GITHUB_TOKEN,USERNAME,TAG,REGISTRY,IMAGE_NAME
-#          script: |
-#            cd /home/${{ secrets.SSH_USER }}/app/
-#
-#            # Логин в реестр
-#            echo $GITHUB_TOKEN | docker login ghcr.io -u $USERNAME --password-stdin
-#
-#            # Нормализация имени образа (в нижний регистр)
-#            export GITHUB_REPOSITORY=$(echo $IMAGE_NAME | tr '[:upper:]' '[:lower:]')
-#            export TAG=$TAG
-#
-#            # Pull & Deploy
-#            # docker compose сам поймет, какую архитектуру (arm/amd) тянуть для текущего сервера
-#            docker compose pull app
-#            docker compose up -d app
-#
-#            # Чистка мусора
-#            docker image prune -f
+  deploy:
+    needs: build-and-push-docker
+    #    if: github.event_name == 'push' && (github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code (for docker-compose.yml)
+        uses: actions/checkout@v4
+
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+
+      - name: Copy stack to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.yml"
+          target: "/home/${{ secrets.SSH_USER }}/app/"
+
+      - name: Execute remote deploy
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ github.actor }}
+          TAG: ${{ needs.build-and-push-docker.outputs.image_tag }}
+          REGISTRY: ghcr.io
+          IMAGE_NAME: ${{ github.repository }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: GITHUB_TOKEN,USERNAME,TAG,REGISTRY,IMAGE_NAME
+          script: |
+            cd /home/${{ secrets.SSH_USER }}/app/
+
+            # Login to container registry
+            echo $GITHUB_TOKEN | docker login ghcr.io -u $USERNAME --password-stdin
+
+            # to lower register
+            export GITHUB_REPOSITORY=$(echo $IMAGE_NAME | tr '[:upper:]' '[:lower:]')
+            export TAG=$TAG
+
+            # Pull & Deploy
+            docker compose pull app
+            docker compose up -d app
+
+            # remove dangling image
+            docker image prune -f
