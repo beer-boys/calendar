@@ -107,6 +107,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "./deploy/docker-compose.yaml"
           target: "/home/${{ secrets.SSH_USER }}/app/"
+          strip_components: 1 # remove 'deploy/' from path
 
       - name: Execute remote deploy
         uses: appleboy/ssh-action@v1.0.3
@@ -132,8 +133,10 @@ jobs:
             export TAG=$TAG
 
             # Pull & Deploy
-            docker compose pull app
-            docker compose up -d app
+            docker compose -f docker-compose.yaml pull app
+            docker compose -f docker-compose.yaml up -d app
 
             # remove dangling image
             docker image prune -f
+            
+            docker logout ghcr.io
