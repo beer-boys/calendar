@@ -105,7 +105,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml"
+          source: "./deploy/docker-compose.yaml"
           target: "/home/${{ secrets.SSH_USER }}/app/"
 
       - name: Execute remote deploy
