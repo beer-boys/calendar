@@ -121,6 +121,13 @@ tasks.withType<Jar> {
     archiveVersion.set(versionConfig.newVersion())
 }
 
+tasks {
+    // disabling plain jar
+    jar {
+        enabled = false
+    }
+}
+
 fun gav(provider: Provider<MinimalExternalModuleDependency>): String {
     return provider.get().toString()
 }
