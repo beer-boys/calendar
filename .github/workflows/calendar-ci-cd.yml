@@ -107,7 +107,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "./deploy/docker-compose.yaml"
           target: "/home/${{ secrets.SSH_USER }}/app/"
-          strip_components: 1 # remove 'deploy/' from path
 
       - name: Execute remote deploy
         uses: appleboy/ssh-action@v1.0.3
@@ -124,6 +123,12 @@ jobs:
           envs: GITHUB_TOKEN,USERNAME,TAG,REGISTRY,IMAGE_NAME
           script: |
             cd /home/${{ secrets.SSH_USER }}/app/
+            
+            if [ -f "deploy/docker-compose.yaml" ]; then
+              mv -f deploy/docker-compose.yaml .
+              rm -rf deploy
+              echo "compose file moved from deploy folder"
+            fi
 
             # Login to container registry
             echo $GITHUB_TOKEN | docker login ghcr.io -u $USERNAME --password-stdin
