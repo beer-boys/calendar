@@ -1,6 +1,7 @@
 package ru.itmo.dws.calendar.core.domain.model
 
 import ru.itmo.dws.calendar.core.domain.valueobject.Priority
+import ru.itmo.dws.calendar.core.domain.valueobject.SchedulingRule
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 
@@ -11,6 +12,9 @@ interface SchedulableEvent {
     val description: String?
     val priority: Priority
     val affectedUsers: List<UserId>
+
+    val schedulingRules: List<SchedulingRule>
+        get() = emptyList()
 
     fun effectiveTimeSlot(): TimeSlot?
 
