@@ -20,7 +20,7 @@ import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
 class HabitRescheduleProposalService(
     private val habitRepository: HabitRepository,
     private val eventProviders: List<SchedulableEventProvider>,
-    private val habitSlotFinder: HabitSlotFinder,
+    private val eventSlotFinder: EventSlotFinder,
     private val zoneId: ZoneId = ZoneId.systemDefault(),
     private val config: RescheduleProposalConfig = RescheduleProposalConfig.default()
 ) : HabitRescheduleProposalUseCase {
@@ -36,10 +36,11 @@ class HabitRescheduleProposalService(
 
         val allOccupiedSlots = occupiedSlots + conflict.conflictingEvent.timeSlot
 
-        val proposedSlots = habitSlotFinder.generateProposedSlots(
-            duration = habit.duration,
-            flexibilityWindow = habit.flexibilityWindow,
+        val proposedSlots = eventSlotFinder.generateProposedSlots(
+            event = habit,
             date = date,
+            baseTimeWindow = habit.flexibilityTimeRange(),
+            eventDuration = habit.duration,
             occupiedSlots = allOccupiedSlots,
             bufferTime = habit.bufferTime,
             preferredStartTime = habit.preferredStartTime(),
@@ -71,7 +72,6 @@ class HabitRescheduleProposalService(
     override fun applyDecision(proposalId: String, decision: UserRescheduleDecision): HabitRescheduleResult {
         val proposal = activeProposals[proposalId]
             ?: return createFailedResult(
-                proposalId = proposalId,
                 status = RescheduleStatus.FAILED_PROPOSAL_EXPIRED,
                 message = "Proposal '$proposalId' not found or expired"
             )
@@ -286,7 +286,7 @@ class HabitRescheduleProposalService(
         val allEvents = eventProviders.flatMap { provider ->
             provider.getEventsForUserOnDate(userId, date)
         }
-        return habitSlotFinder.collectOccupiedSlots(allEvents, excludeEventId)
+        return eventSlotFinder.collectOccupiedSlots(allEvents, excludeEventId)
     }
 
     private fun findAlternativeDates(habit: Habit, originalDate: LocalDate, maxDays: Int): List<LocalDate> {
@@ -300,10 +300,11 @@ class HabitRescheduleProposalService(
                     nextDate,
                     habit.id.toString()
                 )
-                val availableSlot = habitSlotFinder.findOptimalSlot(
-                    duration = habit.duration,
-                    flexibilityWindow = habit.flexibilityWindow,
+                val availableSlot = eventSlotFinder.findOptimalSlot(
+                    event = habit,
                     date = nextDate,
+                    baseTimeWindow = habit.flexibilityTimeRange(),
+                    eventDuration = habit.duration,
                     occupiedSlots = occupiedSlots,
                     bufferTime = habit.bufferTime,
                     zoneId = zoneId
@@ -334,7 +335,6 @@ class HabitRescheduleProposalService(
     }
 
     private fun createFailedResult(
-        proposalId: String,
         status: RescheduleStatus,
         message: String
     ): HabitRescheduleResult {
