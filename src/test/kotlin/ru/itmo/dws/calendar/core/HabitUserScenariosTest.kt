@@ -30,7 +30,7 @@ import ru.itmo.dws.calendar.core.repository.InMemoryFocusTimeRepository
 import ru.itmo.dws.calendar.core.repository.InMemoryHabitRepository
 import ru.itmo.dws.calendar.core.repository.InMemoryMeetingRepository
 import ru.itmo.dws.calendar.core.service.ConflictDetectionService
-import ru.itmo.dws.calendar.core.service.HabitSlotFinder
+import ru.itmo.dws.calendar.core.service.EventSlotFinder
 import ru.itmo.dws.calendar.core.service.provider.FocusTimeEventProvider
 import ru.itmo.dws.calendar.core.service.provider.HabitEventProvider
 import ru.itmo.dws.calendar.core.service.provider.MeetingEventProvider
@@ -49,7 +49,7 @@ class HabitUserScenariosTest {
 
     private lateinit var eventProviders: List<SchedulableEventProvider>
     private lateinit var conflictDetectionService: ConflictDetectionService
-    private lateinit var habitSlotFinder: HabitSlotFinder
+    private lateinit var eventSlotFinder: EventSlotFinder
 
     @BeforeEach
     fun setUp() {
@@ -64,7 +64,7 @@ class HabitUserScenariosTest {
         )
 
         conflictDetectionService = ConflictDetectionService(eventProviders)
-        habitSlotFinder = HabitSlotFinder(defaultZoneId = zoneId)
+        eventSlotFinder = EventSlotFinder(defaultZoneId = zoneId)
     }
 
     @Nested
@@ -85,10 +85,11 @@ class HabitUserScenariosTest {
             )
 
             val occupiedSlots = collectOccupiedSlots(userId, today)
-            val optimalSlot = habitSlotFinder.findOptimalSlot(
-                duration = habit.duration,
-                flexibilityWindow = habit.flexibilityWindow,
+            val optimalSlot = eventSlotFinder.findOptimalSlot(
+                event = habit,
                 date = today,
+                baseTimeWindow = habit.flexibilityTimeRange(),
+                eventDuration = habit.duration,
                 occupiedSlots = occupiedSlots,
                 zoneId = zoneId
             )
@@ -123,10 +124,11 @@ class HabitUserScenariosTest {
             )
 
             val occupiedSlots = collectOccupiedSlots(userId, today)
-            val optimalSlot = habitSlotFinder.findOptimalSlot(
-                duration = habit.duration,
-                flexibilityWindow = habit.flexibilityWindow,
+            val optimalSlot = eventSlotFinder.findOptimalSlot(
+                event = habit,
                 date = today,
+                baseTimeWindow = habit.flexibilityTimeRange(),
+                eventDuration = habit.duration,
                 occupiedSlots = occupiedSlots,
                 zoneId = zoneId
             )
@@ -191,10 +193,11 @@ class HabitUserScenariosTest {
             )
 
             val occupiedSlots = collectOccupiedSlots(userId, today)
-            val optimalSlot = habitSlotFinder.findOptimalSlot(
-                duration = habit.duration,
-                flexibilityWindow = habit.flexibilityWindow,
+            val optimalSlot = eventSlotFinder.findOptimalSlot(
+                event = habit,
                 date = today,
+                baseTimeWindow = habit.flexibilityTimeRange(),
+                eventDuration = habit.duration,
                 occupiedSlots = occupiedSlots,
                 zoneId = zoneId
             )
@@ -228,10 +231,11 @@ class HabitUserScenariosTest {
             )
 
             val occupiedSlots = collectOccupiedSlots(userId, today)
-            val proposedSlots = habitSlotFinder.generateProposedSlots(
-                duration = habit.duration,
-                flexibilityWindow = habit.flexibilityWindow,
+            val proposedSlots = eventSlotFinder.generateProposedSlots(
+                event = habit,
                 date = today,
+                baseTimeWindow = habit.flexibilityTimeRange(),
+                eventDuration = habit.duration,
                 occupiedSlots = occupiedSlots,
                 maxSlots = 5,
                 zoneId = zoneId
@@ -262,10 +266,11 @@ class HabitUserScenariosTest {
                 recurrenceRule = RecurrenceRule.daily()
             )
 
-            val proposedSlots = habitSlotFinder.generateProposedSlots(
-                duration = habit.duration,
-                flexibilityWindow = habit.flexibilityWindow,
+            val proposedSlots = eventSlotFinder.generateProposedSlots(
+                event = habit,
                 date = today,
+                baseTimeWindow = habit.flexibilityTimeRange(),
+                eventDuration = habit.duration,
                 occupiedSlots = emptyList(),
                 preferredStartTime = preferredTime,
                 maxSlots = 20,
@@ -309,10 +314,11 @@ class HabitUserScenariosTest {
             )
 
             val occupiedSlots = collectOccupiedSlots(userId, today)
-            val optimalSlot = habitSlotFinder.findOptimalSlot(
-                duration = habit.duration,
-                flexibilityWindow = habit.flexibilityWindow,
+            val optimalSlot = eventSlotFinder.findOptimalSlot(
+                event = habit,
                 date = today,
+                baseTimeWindow = habit.flexibilityTimeRange(),
+                eventDuration = habit.duration,
                 occupiedSlots = occupiedSlots,
                 zoneId = zoneId
             )
@@ -420,6 +426,6 @@ class HabitUserScenariosTest {
         val allEvents = eventProviders.flatMap { provider ->
             provider.getEventsForUserOnDate(userId, date)
         }
-        return habitSlotFinder.collectOccupiedSlots(allEvents, null)
+        return eventSlotFinder.collectOccupiedSlots(allEvents, null)
     }
 }

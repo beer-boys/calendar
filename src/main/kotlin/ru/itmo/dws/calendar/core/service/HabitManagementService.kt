@@ -1,6 +1,7 @@
 package ru.itmo.dws.calendar.core.service
 
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import ru.itmo.dws.calendar.core.domain.model.CreateHabitRequest
 import ru.itmo.dws.calendar.core.domain.model.EventType
@@ -20,7 +21,7 @@ import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
 class HabitManagementService(
     private val habitRepository: HabitRepository,
     private val eventProviders: List<SchedulableEventProvider>,
-    private val habitSlotFinder: HabitSlotFinder,
+    private val eventSlotFinder: EventSlotFinder,
     private val conflictDetectionService: ConflictDetectionService,
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) : HabitManagementUseCase {
@@ -116,14 +117,15 @@ class HabitManagementService(
     private fun findSlotForDate(
         habit: Habit,
         date: LocalDate,
-        preferredStartTime: java.time.LocalTime?
+        preferredStartTime: LocalTime?
     ): TimeSlot? {
         val occupiedSlots = collectOccupiedSlotsForUser(habit.userId, date, habit.id.toString())
 
-        return habitSlotFinder.findOptimalSlot(
-            duration = habit.duration,
-            flexibilityWindow = habit.flexibilityWindow,
+        return eventSlotFinder.findOptimalSlot(
+            event = habit,
             date = date,
+            baseTimeWindow = habit.flexibilityTimeRange(),
+            eventDuration = habit.duration,
             occupiedSlots = occupiedSlots,
             bufferTime = habit.bufferTime,
             preferredStartTime = preferredStartTime,
@@ -139,7 +141,7 @@ class HabitManagementService(
         val allEvents = eventProviders.flatMap { provider ->
             provider.getEventsForUserOnDate(userId, date)
         }
-        return habitSlotFinder.collectOccupiedSlots(allEvents, excludeEventId)
+        return eventSlotFinder.collectOccupiedSlots(allEvents, excludeEventId)
     }
 
     private fun detectConflictsForHabit(habit: Habit, date: LocalDate): List<HabitConflict> {

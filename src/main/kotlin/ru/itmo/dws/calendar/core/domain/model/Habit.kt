@@ -9,6 +9,7 @@ import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
 import ru.itmo.dws.calendar.core.domain.valueobject.Priority
 import ru.itmo.dws.calendar.core.domain.valueobject.RecurrenceRule
 import ru.itmo.dws.calendar.core.domain.valueobject.SchedulingRule
+import ru.itmo.dws.calendar.core.domain.valueobject.TimeRange
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 
@@ -77,4 +78,9 @@ data class Habit(
     fun preferredStartTime(): LocalTime? = flexibilityWindow.preferredDuration?.let {
         flexibilityWindow.earliestTime
     }
+
+    fun flexibilityTimeRange(): TimeRange = TimeRange(
+        start = flexibilityWindow.earliestTime,
+        end = flexibilityWindow.latestTime
+    )
 }

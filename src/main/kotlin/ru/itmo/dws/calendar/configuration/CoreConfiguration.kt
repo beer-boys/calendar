@@ -8,8 +8,8 @@ import ru.itmo.dws.calendar.core.port.output.FocusTimeRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
 import ru.itmo.dws.calendar.core.port.output.MeetingRepository
 import ru.itmo.dws.calendar.core.service.ConflictDetectionService
+import ru.itmo.dws.calendar.core.service.EventSlotFinder
 import ru.itmo.dws.calendar.core.service.HabitManagementService
-import ru.itmo.dws.calendar.core.service.HabitSlotFinder
 import ru.itmo.dws.calendar.core.service.provider.FocusTimeEventProvider
 import ru.itmo.dws.calendar.core.service.provider.HabitEventProvider
 import ru.itmo.dws.calendar.core.service.provider.MeetingEventProvider
@@ -19,8 +19,8 @@ import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
 class CoreConfiguration {
 
     @Bean
-    fun habitSlotFinder(): HabitSlotFinder {
-        return HabitSlotFinder()
+    fun eventSlotFinder(): EventSlotFinder {
+        return EventSlotFinder()
     }
 
     @Bean
@@ -58,13 +58,13 @@ class CoreConfiguration {
     fun habitManagementUseCase(
         habitRepository: HabitRepository,
         eventProviders: List<SchedulableEventProvider>,
-        habitSlotFinder: HabitSlotFinder,
+        eventSlotFinder: EventSlotFinder,
         conflictDetectionService: ConflictDetectionService
     ): HabitManagementUseCase {
         return HabitManagementService(
             habitRepository = habitRepository,
             eventProviders = eventProviders,
-            habitSlotFinder = habitSlotFinder,
+            eventSlotFinder = eventSlotFinder,
             conflictDetectionService = conflictDetectionService,
             zoneId = ZoneId.systemDefault()
         )

@@ -4,31 +4,36 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.ZonedDateTime
 import kotlin.math.abs
 import ru.itmo.dws.calendar.core.domain.model.ProposedSlot
 import ru.itmo.dws.calendar.core.domain.model.SchedulableEvent
 import ru.itmo.dws.calendar.core.domain.model.SlotTradeoff
 import ru.itmo.dws.calendar.core.domain.valueobject.BufferDuration
-import ru.itmo.dws.calendar.core.domain.valueobject.HabitFlexibilityWindow
+import ru.itmo.dws.calendar.core.domain.valueobject.SchedulingContext
+import ru.itmo.dws.calendar.core.domain.valueobject.TimeRange
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 
-class HabitSlotFinder(
+class EventSlotFinder(
     private val slotInterval: Duration = Duration.ofMinutes(15),
     private val defaultZoneId: ZoneId = ZoneId.systemDefault(),
     private val scoringConfig: SlotScoringConfig = SlotScoringConfig.default()
 ) {
     fun findOptimalSlot(
-        duration: Duration,
-        flexibilityWindow: HabitFlexibilityWindow,
+        event: SchedulableEvent,
         date: LocalDate,
+        baseTimeWindow: TimeRange,
+        eventDuration: Duration,
         occupiedSlots: List<TimeSlot>,
         bufferTime: BufferDuration = BufferDuration.NONE,
         preferredStartTime: LocalTime? = null,
         zoneId: ZoneId = defaultZoneId
     ): TimeSlot? {
-        val possibleSlots = generatePossibleSlots(duration, flexibilityWindow, date, zoneId)
-        val availableSlots = filterAvailableSlots(possibleSlots, occupiedSlots, bufferTime)
+        val context = buildSchedulingContext(event, date, baseTimeWindow, eventDuration, zoneId)
+
+        if (!context.isSchedulingAllowed()) return null
+
+        val contextSlots = context.generateAvailableSlots(slotInterval)
+        val availableSlots = filterAvailableSlots(contextSlots, occupiedSlots, bufferTime)
 
         if (availableSlots.isEmpty()) return null
 
@@ -40,30 +45,50 @@ class HabitSlotFinder(
     }
 
     fun generateProposedSlots(
-        duration: Duration,
-        flexibilityWindow: HabitFlexibilityWindow,
+        event: SchedulableEvent,
         date: LocalDate,
+        baseTimeWindow: TimeRange,
+        eventDuration: Duration,
         occupiedSlots: List<TimeSlot>,
         bufferTime: BufferDuration = BufferDuration.NONE,
         preferredStartTime: LocalTime? = null,
         maxSlots: Int = 5,
         zoneId: ZoneId = defaultZoneId
     ): List<ProposedSlot> {
-        val availableSlots = findAllAvailableSlots(
-            duration,
-            flexibilityWindow,
-            date,
-            occupiedSlots,
-            bufferTime,
-            zoneId
-        )
+        val context = buildSchedulingContext(event, date, baseTimeWindow, eventDuration, zoneId)
+
+        if (!context.isSchedulingAllowed()) return emptyList()
+
+        val contextSlots = context.generateAvailableSlots(slotInterval)
+        val availableSlots = filterAvailableSlots(contextSlots, occupiedSlots, bufferTime)
 
         if (availableSlots.isEmpty()) return emptyList()
 
         return availableSlots
-            .map { slot -> scoreSlot(slot, flexibilityWindow, preferredStartTime, occupiedSlots) }
+            .map { slot -> scoreSlot(slot, context.effectiveTimeWindow, preferredStartTime, occupiedSlots) }
             .sortedByDescending { it.score }
             .take(maxSlots)
+    }
+
+    fun buildSchedulingContext(
+        event: SchedulableEvent,
+        date: LocalDate,
+        baseTimeWindow: TimeRange,
+        eventDuration: Duration,
+        zoneId: ZoneId = defaultZoneId
+    ): SchedulingContext {
+        var context = SchedulingContext.forDate(
+            date = date,
+            baseTimeWindow = baseTimeWindow,
+            eventDuration = eventDuration,
+            zoneId = zoneId
+        )
+
+        event.schedulingRules.forEach { rule ->
+            context = rule.applyTo(context)
+        }
+
+        return context
     }
 
     fun collectOccupiedSlots(
@@ -73,39 +98,6 @@ class HabitSlotFinder(
         return events
             .filter { excludeEventId == null || it.eventId != excludeEventId }
             .mapNotNull { it.effectiveTimeSlot() }
-    }
-
-    private fun findAllAvailableSlots(
-        duration: Duration,
-        flexibilityWindow: HabitFlexibilityWindow,
-        date: LocalDate,
-        occupiedSlots: List<TimeSlot>,
-        bufferTime: BufferDuration = BufferDuration.NONE,
-        zoneId: ZoneId = defaultZoneId
-    ): List<TimeSlot> {
-        val possibleSlots = generatePossibleSlots(duration, flexibilityWindow, date, zoneId)
-        return filterAvailableSlots(possibleSlots, occupiedSlots, bufferTime)
-    }
-
-    private fun generatePossibleSlots(
-        duration: Duration,
-        flexibilityWindow: HabitFlexibilityWindow,
-        date: LocalDate,
-        zoneId: ZoneId = defaultZoneId
-    ): List<TimeSlot> {
-        val slots = mutableListOf<TimeSlot>()
-        var currentStart = ZonedDateTime.of(date, flexibilityWindow.earliestTime, zoneId)
-        val latestEnd = ZonedDateTime.of(date, flexibilityWindow.latestTime, zoneId)
-
-        while (true) {
-            val slotEnd = currentStart.plus(duration)
-            if (slotEnd.isAfter(latestEnd)) break
-
-            slots.add(TimeSlot(currentStart, slotEnd))
-            currentStart = currentStart.plus(slotInterval)
-        }
-
-        return slots
     }
 
     private fun filterAvailableSlots(
@@ -123,10 +115,7 @@ class HabitSlotFinder(
         }
     }
 
-    private fun findClosestToPreferred(
-        slots: List<TimeSlot>,
-        preferredTime: LocalTime
-    ): TimeSlot {
+    private fun findClosestToPreferred(slots: List<TimeSlot>, preferredTime: LocalTime): TimeSlot {
         return slots.minByOrNull { slot ->
             val slotTime = slot.start.toLocalTime()
             abs(
@@ -140,7 +129,7 @@ class HabitSlotFinder(
 
     private fun scoreSlot(
         slot: TimeSlot,
-        flexibilityWindow: HabitFlexibilityWindow,
+        timeWindow: TimeRange,
         preferredStartTime: LocalTime?,
         occupiedSlots: List<TimeSlot>
     ): ProposedSlot {
@@ -149,7 +138,7 @@ class HabitSlotFinder(
         val slotStartTime = slot.start.toLocalTime()
 
         score -= calculatePreferredTimeDeviation(slotStartTime, preferredStartTime, tradeoffs)
-        score -= calculateWindowBoundaryPenalty(slotStartTime, flexibilityWindow, slot, tradeoffs)
+        score -= calculateWindowBoundaryPenalty(slotStartTime, timeWindow, slot, tradeoffs)
         score -= calculateBreakPenalty(slot, occupiedSlots, tradeoffs)
 
         return ProposedSlot(
@@ -186,19 +175,19 @@ class HabitSlotFinder(
 
     private fun calculateWindowBoundaryPenalty(
         slotStartTime: LocalTime,
-        flexibilityWindow: HabitFlexibilityWindow,
+        timeWindow: TimeRange,
         slot: TimeSlot,
         tradeoffs: MutableList<SlotTradeoff>
     ): Int {
         var penalty = 0
-        val windowDuration = flexibilityWindow.windowDuration().toMinutes()
+        val windowDuration = Duration.between(timeWindow.start, timeWindow.end).toMinutes()
         val distanceFromStart = Duration.between(
-            flexibilityWindow.earliestTime.atDate(slot.start.toLocalDate()),
+            timeWindow.start.atDate(slot.start.toLocalDate()),
             slotStartTime.atDate(slot.start.toLocalDate())
         ).toMinutes()
         val distanceFromEnd = Duration.between(
             slotStartTime.atDate(slot.start.toLocalDate()),
-            flexibilityWindow.latestTime.atDate(slot.start.toLocalDate())
+            timeWindow.end.atDate(slot.start.toLocalDate())
         ).toMinutes()
 
         if (distanceFromStart < windowDuration * scoringConfig.windowBoundaryThreshold) {
