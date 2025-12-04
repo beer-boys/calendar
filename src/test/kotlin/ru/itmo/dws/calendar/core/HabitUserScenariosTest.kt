@@ -81,7 +81,7 @@ class HabitUserScenariosTest {
                     earliestTime = LocalTime.of(7, 0),
                     latestTime = LocalTime.of(9, 0)
                 ),
-                recurrenceRule = RecurrenceRule.daily()
+                recurrenceRule = RecurrenceRule.daily(today)
             )
 
             val occupiedSlots = collectOccupiedSlots(userId, today)
@@ -120,7 +120,7 @@ class HabitUserScenariosTest {
                     earliestTime = LocalTime.of(7, 30),
                     latestTime = LocalTime.of(10, 0)
                 ),
-                recurrenceRule = RecurrenceRule.daily()
+                recurrenceRule = RecurrenceRule.daily(today)
             )
 
             val occupiedSlots = collectOccupiedSlots(userId, today)
@@ -148,7 +148,7 @@ class HabitUserScenariosTest {
                     earliestTime = LocalTime.of(12, 0),
                     latestTime = LocalTime.of(18, 0)
                 ),
-                recurrenceRule = RecurrenceRule.daily()
+                recurrenceRule = RecurrenceRule.daily(today)
             ).copy(currentTimeSlot = createTimeSlot(LocalTime.of(14, 0), LocalTime.of(15, 0)))
             habitRepository.saveHabit(habit)
 
@@ -189,7 +189,7 @@ class HabitUserScenariosTest {
                 title = "Спорт",
                 duration = Duration.ofHours(1),
                 flexibilityWindow = HabitFlexibilityWindow.workingHours(),
-                recurrenceRule = RecurrenceRule.daily()
+                recurrenceRule = RecurrenceRule.daily(today)
             )
 
             val occupiedSlots = collectOccupiedSlots(userId, today)
@@ -227,7 +227,7 @@ class HabitUserScenariosTest {
                     earliestTime = LocalTime.of(7, 0),
                     latestTime = LocalTime.of(12, 0)
                 ),
-                recurrenceRule = RecurrenceRule.daily()
+                recurrenceRule = RecurrenceRule.daily(today)
             )
 
             val occupiedSlots = collectOccupiedSlots(userId, today)
@@ -263,7 +263,7 @@ class HabitUserScenariosTest {
                     earliestTime = LocalTime.of(7, 0),
                     latestTime = LocalTime.of(10, 0)
                 ),
-                recurrenceRule = RecurrenceRule.daily()
+                recurrenceRule = RecurrenceRule.daily(today)
             )
 
             val proposedSlots = eventSlotFinder.generateProposedSlots(
@@ -310,7 +310,7 @@ class HabitUserScenariosTest {
                     earliestTime = LocalTime.of(9, 0),
                     latestTime = LocalTime.of(12, 0)
                 ),
-                recurrenceRule = RecurrenceRule.daily()
+                recurrenceRule = RecurrenceRule.daily(today)
             )
 
             val occupiedSlots = collectOccupiedSlots(userId, today)
@@ -334,18 +334,20 @@ class HabitUserScenariosTest {
         @Test
         @DisplayName("Привычка запланирована только на определённые дни недели")
         fun `habit scheduled only on specific days of week`() {
+            val startOfWeek = today.with(DayOfWeek.MONDAY)
             val habit = createHabit(
                 title = "Бег",
                 duration = Duration.ofMinutes(45),
                 flexibilityWindow = HabitFlexibilityWindow.morning(),
                 recurrenceRule = RecurrenceRule.weekly(
-                    setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY)
+                    startDate = startOfWeek,
+                    daysOfWeek = setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY)
                 )
             )
 
-            val monday = today.with(DayOfWeek.MONDAY)
-            val tuesday = today.with(DayOfWeek.TUESDAY)
-            val wednesday = today.with(DayOfWeek.WEDNESDAY)
+            val monday = startOfWeek
+            val tuesday = startOfWeek.with(DayOfWeek.TUESDAY)
+            val wednesday = startOfWeek.with(DayOfWeek.WEDNESDAY)
 
             assertTrue(habit.shouldOccurOn(monday))
             assertFalse(habit.shouldOccurOn(tuesday))
@@ -364,7 +366,7 @@ class HabitUserScenariosTest {
                 title = "Медитация",
                 duration = Duration.ofMinutes(30),
                 flexibilityWindow = HabitFlexibilityWindow.morning(),
-                recurrenceRule = RecurrenceRule.daily()
+                recurrenceRule = RecurrenceRule.daily(today)
             ).copy(currentTimeSlot = createTimeSlot(LocalTime.of(7, 0), LocalTime.of(7, 30)))
             habitRepository.saveHabit(meditation)
 
@@ -372,7 +374,7 @@ class HabitUserScenariosTest {
                 title = "Зарядка",
                 duration = Duration.ofMinutes(30),
                 flexibilityWindow = HabitFlexibilityWindow.morning(),
-                recurrenceRule = RecurrenceRule.daily()
+                recurrenceRule = RecurrenceRule.daily(today)
             ).copy(currentTimeSlot = createTimeSlot(LocalTime.of(7, 15), LocalTime.of(7, 45)))
             habitRepository.saveHabit(exercise)
 

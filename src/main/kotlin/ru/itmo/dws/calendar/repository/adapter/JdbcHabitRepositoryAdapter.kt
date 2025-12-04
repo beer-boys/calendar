@@ -155,6 +155,7 @@ class JdbcHabitRepositoryAdapter(
             recurrenceFrequency = habit.recurrenceRule.frequency.name,
             recurrenceDaysOfWeek = habit.recurrenceRule.daysOfWeek.ifEmpty { null },
             recurrenceInterval = habit.recurrenceRule.interval,
+            recurrenceStartDate = habit.recurrenceRule.startDate,
             recurrenceEndDate = habit.recurrenceRule.endDate,
             flexibilityEarliestTime = habit.flexibilityWindow.earliestTime,
             flexibilityLatestTime = habit.flexibilityWindow.latestTime,
@@ -221,6 +222,7 @@ class JdbcHabitRepositoryAdapter(
                 frequency = RecurrenceRule.Frequency.valueOf(metadata.recurrenceFrequency),
                 daysOfWeek = metadata.recurrenceDaysOfWeek ?: emptySet(),
                 interval = metadata.recurrenceInterval,
+                startDate = metadata.recurrenceStartDate,
                 endDate = metadata.recurrenceEndDate
             )
 
