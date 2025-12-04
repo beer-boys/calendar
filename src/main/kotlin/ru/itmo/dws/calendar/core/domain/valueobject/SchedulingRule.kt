@@ -168,14 +168,16 @@ data class DateRange(
 
 data class DayTimeExclusion(
     val dayOfWeek: DayOfWeek,
-    val excludedRanges: List<TimeRange> = emptyList()
+    val excludedRanges: List<TimeRange> = emptyList(),
+    val excludeWholeDay: Boolean = false
 ) {
     fun isTimeExcluded(time: LocalTime): Boolean {
-        if (excludedRanges.isEmpty()) return true
+        if (excludeWholeDay) return true
+        if (excludedRanges.isEmpty()) return false
         return excludedRanges.any { it.contains(time) }
     }
 
-    fun isWholeDayExcluded(): Boolean = excludedRanges.isEmpty()
+    fun isWholeDayExcluded(): Boolean = excludeWholeDay
 }
 
 data class TimeRange(
