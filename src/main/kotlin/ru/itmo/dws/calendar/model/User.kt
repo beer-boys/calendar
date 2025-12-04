@@ -23,5 +23,5 @@ data class User(
 
     override fun getPassword(): String = hashedPassword
 
-    override fun getUsername(): String = id.toString()
+    override fun getUsername(): String = login
 }
