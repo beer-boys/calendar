@@ -8,6 +8,7 @@ import ru.itmo.dws.calendar.core.domain.valueobject.HabitFlexibilityWindow
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
 import ru.itmo.dws.calendar.core.domain.valueobject.Priority
 import ru.itmo.dws.calendar.core.domain.valueobject.RecurrenceRule
+import ru.itmo.dws.calendar.core.domain.valueobject.SchedulingRule
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 
@@ -21,7 +22,8 @@ data class Habit(
     val flexibilityWindow: HabitFlexibilityWindow,
     override val priority: Priority = Priority.forHabit(),
     val currentTimeSlot: TimeSlot? = null,
-    val bufferTime: BufferDuration = BufferDuration.NONE
+    val bufferTime: BufferDuration = BufferDuration.NONE,
+    override val schedulingRules: List<SchedulingRule> = emptyList()
 ) : SchedulableEvent {
 
     override val eventId: String get() = id.toString()

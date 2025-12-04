@@ -13,7 +13,8 @@ data class UpdateHabitRequestDto(
     val flexibility: FlexibilityDto? = null,
     val priority: Int? = null,
     val bufferBeforeMinutes: Long? = null,
-    val bufferAfterMinutes: Long? = null
+    val bufferAfterMinutes: Long? = null,
+    val rules: List<SchedulingRuleRequestDto>? = null
 ) {
     fun toDomain(): UpdateHabitRequest {
         return UpdateHabitRequest(
@@ -30,7 +31,8 @@ data class UpdateHabitRequestDto(
                 )
             } else {
                 null
-            }
+            },
+            rules = rules?.mapNotNull { it.toDomain() }
         )
     }
 }
