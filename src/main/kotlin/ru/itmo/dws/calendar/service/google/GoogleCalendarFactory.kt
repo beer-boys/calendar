@@ -1,4 +1,4 @@
-package ru.itmo.dws.calendar.service
+package ru.itmo.dws.calendar.service.google
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
