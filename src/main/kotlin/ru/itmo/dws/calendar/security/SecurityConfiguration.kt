@@ -1,5 +1,6 @@
 package ru.itmo.dws.calendar.security
 
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
@@ -56,6 +57,18 @@ class SecurityConfiguration {
                     response.sendRedirect("${BasePath.GOOGLE_BASE}/calendars")
                 }
             }
+            .build()
+    }
+
+    @Bean
+    @Order(0)
+    fun actuatorSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        return http
+            .securityMatcher(EndpointRequest.toAnyEndpoint())
+            .authorizeHttpRequests { authz ->
+                authz.anyRequest().permitAll()
+            }
+            .csrf { it.disable() }
             .build()
     }
 
