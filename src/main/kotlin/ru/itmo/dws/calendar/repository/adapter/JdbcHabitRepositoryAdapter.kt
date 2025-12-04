@@ -25,10 +25,14 @@ import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlotOverride
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
 import ru.itmo.dws.calendar.repository.entity.DayTimeExclusionDto
+import ru.itmo.dws.calendar.repository.entity.ExclusionRuleDto
+import ru.itmo.dws.calendar.repository.entity.FrequencyRuleDto
 import ru.itmo.dws.calendar.repository.entity.HabitMetadata
+import ru.itmo.dws.calendar.repository.entity.RecurrenceExceptionRuleDto
 import ru.itmo.dws.calendar.repository.entity.SchedulingRuleDto
 import ru.itmo.dws.calendar.repository.entity.TimeRangeDto
 import ru.itmo.dws.calendar.repository.entity.TimeSlotOverrideDto
+import ru.itmo.dws.calendar.repository.entity.TimeWindowRuleDto
 
 @Component
 class JdbcHabitRepositoryAdapter(
@@ -166,16 +170,14 @@ class JdbcHabitRepositoryAdapter(
 
     private fun toRuleDto(rule: SchedulingRule): SchedulingRuleDto {
         return when (rule) {
-            is SchedulingRule.TimeWindowRule -> SchedulingRuleDto(
-                type = SchedulingRuleDto.TYPE_TIME_WINDOW,
+            is SchedulingRule.TimeWindowRule -> TimeWindowRuleDto(
                 earliestTime = rule.earliestTime,
                 latestTime = rule.latestTime,
                 activeDateRangeStart = rule.activeDateRange?.start,
                 activeDateRangeEnd = rule.activeDateRange?.end,
                 activeDaysOfWeek = rule.activeDaysOfWeek
             )
-            is SchedulingRule.ExclusionRule -> SchedulingRuleDto(
-                type = SchedulingRuleDto.TYPE_EXCLUSION,
+            is SchedulingRule.ExclusionRule -> ExclusionRuleDto(
                 excludedDates = rule.excludedDates.ifEmpty { null },
                 excludedDaysOfWeek = rule.excludedDaysOfWeek.ifEmpty { null },
                 excludedTimeRanges = rule.excludedTimeRanges.map { dayExclusion ->
@@ -186,17 +188,15 @@ class JdbcHabitRepositoryAdapter(
                         }.ifEmpty { null }
                     )
                 }.ifEmpty { null },
-                excludeHolidays = rule.excludeHolidays.takeIf { it }
+                excludeHolidays = rule.excludeHolidays
             )
-            is SchedulingRule.FrequencyRule -> SchedulingRuleDto(
-                type = SchedulingRuleDto.TYPE_FREQUENCY,
+            is SchedulingRule.FrequencyRule -> FrequencyRuleDto(
                 periodDays = rule.period.toDays(),
                 minOccurrences = rule.minOccurrences,
                 maxOccurrences = rule.maxOccurrences,
                 minGapMinutes = rule.minGapBetweenOccurrences?.toMinutes()
             )
-            is SchedulingRule.RecurrenceExceptionRule -> SchedulingRuleDto(
-                type = SchedulingRuleDto.TYPE_RECURRENCE_EXCEPTION,
+            is SchedulingRule.RecurrenceExceptionRule -> RecurrenceExceptionRuleDto(
                 cancelledDates = rule.cancelledDates.ifEmpty { null },
                 modifiedOccurrences = rule.modifiedOccurrences.mapKeys { it.key.toString() }
                     .mapValues { (_, override) ->
@@ -249,7 +249,7 @@ class JdbcHabitRepositoryAdapter(
                 null
             }
 
-            val rules = metadata.rules?.mapNotNull { fromRuleDto(it) } ?: emptyList()
+            val rules = metadata.rules?.map { fromRuleDto(it) } ?: emptyList()
 
             return Habit(
                 id = HabitId(UUID.fromString(rs.getString("id"))),
@@ -266,23 +266,19 @@ class JdbcHabitRepositoryAdapter(
             )
         }
 
-        private fun fromRuleDto(dto: SchedulingRuleDto): SchedulingRule? {
-            return when (dto.type) {
-                SchedulingRuleDto.TYPE_TIME_WINDOW -> {
-                    val earliest = dto.earliestTime ?: return null
-                    val latest = dto.latestTime ?: return null
-                    SchedulingRule.TimeWindowRule(
-                        earliestTime = earliest,
-                        latestTime = latest,
-                        activeDateRange = if (dto.activeDateRangeStart != null || dto.activeDateRangeEnd != null) {
-                            DateRange(dto.activeDateRangeStart, dto.activeDateRangeEnd)
-                        } else {
-                            null
-                        },
-                        activeDaysOfWeek = dto.activeDaysOfWeek
-                    )
-                }
-                SchedulingRuleDto.TYPE_EXCLUSION -> SchedulingRule.ExclusionRule(
+        private fun fromRuleDto(dto: SchedulingRuleDto): SchedulingRule {
+            return when (dto) {
+                is TimeWindowRuleDto -> SchedulingRule.TimeWindowRule(
+                    earliestTime = dto.earliestTime,
+                    latestTime = dto.latestTime,
+                    activeDateRange = if (dto.activeDateRangeStart != null || dto.activeDateRangeEnd != null) {
+                        DateRange(dto.activeDateRangeStart, dto.activeDateRangeEnd)
+                    } else {
+                        null
+                    },
+                    activeDaysOfWeek = dto.activeDaysOfWeek
+                )
+                is ExclusionRuleDto -> SchedulingRule.ExclusionRule(
                     excludedDates = dto.excludedDates ?: emptySet(),
                     excludedDaysOfWeek = dto.excludedDaysOfWeek ?: emptySet(),
                     excludedTimeRanges = dto.excludedTimeRanges?.map { dayDto ->
@@ -293,18 +289,15 @@ class JdbcHabitRepositoryAdapter(
                             } ?: emptyList()
                         )
                     } ?: emptyList(),
-                    excludeHolidays = dto.excludeHolidays ?: false
+                    excludeHolidays = dto.excludeHolidays
                 )
-                SchedulingRuleDto.TYPE_FREQUENCY -> {
-                    val periodDays = dto.periodDays ?: return null
-                    SchedulingRule.FrequencyRule(
-                        period = Duration.ofDays(periodDays),
-                        minOccurrences = dto.minOccurrences,
-                        maxOccurrences = dto.maxOccurrences,
-                        minGapBetweenOccurrences = dto.minGapMinutes?.let { Duration.ofMinutes(it) }
-                    )
-                }
-                SchedulingRuleDto.TYPE_RECURRENCE_EXCEPTION -> SchedulingRule.RecurrenceExceptionRule(
+                is FrequencyRuleDto -> SchedulingRule.FrequencyRule(
+                    period = Duration.ofDays(dto.periodDays),
+                    minOccurrences = dto.minOccurrences,
+                    maxOccurrences = dto.maxOccurrences,
+                    minGapBetweenOccurrences = dto.minGapMinutes?.let { Duration.ofMinutes(it) }
+                )
+                is RecurrenceExceptionRuleDto -> SchedulingRule.RecurrenceExceptionRule(
                     cancelledDates = dto.cancelledDates ?: emptySet(),
                     modifiedOccurrences = dto.modifiedOccurrences?.mapKeys {
                         LocalDate.parse(it.key)
@@ -316,7 +309,6 @@ class JdbcHabitRepositoryAdapter(
                         )
                     } ?: emptyMap()
                 )
-                else -> null
             }
         }
     }

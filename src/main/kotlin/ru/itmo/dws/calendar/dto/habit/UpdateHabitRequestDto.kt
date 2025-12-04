@@ -32,7 +32,7 @@ data class UpdateHabitRequestDto(
             } else {
                 null
             },
-            rules = rules?.mapNotNull { it.toDomain() }
+            rules = rules?.map { it.toDomain() }
         )
     }
 }
