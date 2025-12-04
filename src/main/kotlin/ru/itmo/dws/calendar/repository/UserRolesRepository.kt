@@ -31,5 +31,5 @@ interface UserRolesRepository : UserRolesExtension, Repository<UserRole, Void> {
         )
     """
     )
-    fun findRolesByUserId(userId: UUID): List<Int>
+    fun findRolesByUserId(userId: UUID): List<String>
 }
