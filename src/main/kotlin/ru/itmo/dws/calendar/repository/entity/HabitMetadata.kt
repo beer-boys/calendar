@@ -11,6 +11,7 @@ data class HabitMetadata(
     val recurrenceFrequency: String,
     val recurrenceDaysOfWeek: Set<DayOfWeek>?,
     val recurrenceInterval: Int,
+    val recurrenceStartDate: LocalDate,
     val recurrenceEndDate: LocalDate?,
     val flexibilityEarliestTime: LocalTime,
     val flexibilityLatestTime: LocalTime,

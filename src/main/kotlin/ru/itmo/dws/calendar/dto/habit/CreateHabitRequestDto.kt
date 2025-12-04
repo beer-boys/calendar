@@ -53,6 +53,7 @@ data class RecurrenceDto(
     val frequency: String,
     val daysOfWeek: Set<DayOfWeek>? = null,
     val interval: Int = 1,
+    val startDate: LocalDate? = null,
     val endDate: LocalDate? = null
 ) {
     fun toDomain(): RecurrenceRule {
@@ -60,6 +61,7 @@ data class RecurrenceDto(
             frequency = RecurrenceRule.Frequency.valueOf(frequency.uppercase()),
             daysOfWeek = daysOfWeek ?: emptySet(),
             interval = interval,
+            startDate = startDate ?: LocalDate.now(),
             endDate = endDate
         )
     }
