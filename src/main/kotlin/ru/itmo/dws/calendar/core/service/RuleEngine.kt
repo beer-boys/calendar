@@ -12,6 +12,9 @@ import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 class RuleEngine(
     private val defaultZoneId: ZoneId = ZoneId.systemDefault()
 ) {
+    companion object {
+        private const val MINUTES_PER_DAY = 24 * 60L
+    }
 
     fun buildContext(
         event: SchedulableEvent,
@@ -100,12 +103,20 @@ class RuleEngine(
         return slots.filter { slot ->
             val startTime = slot.start.toLocalTime()
             val endTime = slot.end.toLocalTime()
+            val crossesMidnight = slot.end.toLocalDate() != slot.start.toLocalDate()
 
-            context.effectiveTimeWindow.contains(startTime) &&
-                context.effectiveTimeWindow.contains(endTime) &&
+            val withinWindow = context.effectiveTimeWindow.contains(startTime) &&
+                (crossesMidnight || context.effectiveTimeWindow.contains(endTime))
+
+            val notExcluded = if (crossesMidnight) {
+                true
+            } else {
                 context.excludedTimeRanges.none { excluded ->
                     TimeRange(startTime, endTime).overlapsWith(excluded)
                 }
+            }
+
+            withinWindow && notExcluded
         }
     }
 
@@ -122,7 +133,7 @@ class RuleEngine(
         val frequencyConstraint = context.frequencyConstraint
             ?: return FrequencyValidation.valid()
 
-        val periodDays = frequencyConstraint.period.toDays()
+        val periodDays = maxOf(1L, frequencyConstraint.period.toDays())
         val periodStart = proposedDate.minusDays(periodDays - 1)
 
         val occurrencesInPeriod = existingOccurrences.count { date ->
@@ -139,7 +150,8 @@ class RuleEngine(
         }
 
         if (frequencyConstraint.minGapBetweenOccurrences != null) {
-            val minGapDays = frequencyConstraint.minGapBetweenOccurrences.toDays()
+            val minGapDays =
+                (frequencyConstraint.minGapBetweenOccurrences.toMinutes() + MINUTES_PER_DAY - 1) / MINUTES_PER_DAY
             val tooClose = existingOccurrences.any { existing ->
                 val daysBetween = kotlin.math.abs(proposedDate.toEpochDay() - existing.toEpochDay())
                 daysBetween < minGapDays && existing != proposedDate

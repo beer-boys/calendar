@@ -58,10 +58,13 @@ data class SchedulingContext(
             if (slotEnd.isAfter(latestEnd)) break
 
             val candidateSlot = TimeSlot(currentStart, slotEnd)
-            val slotTimeRange = TimeRange(currentStart.toLocalTime(), slotEnd.toLocalTime())
 
-            val isExcluded = excludedTimeRanges.any { excluded ->
-                slotTimeRange.overlapsWith(excluded)
+            val crossesMidnight = slotEnd.toLocalDate() != currentStart.toLocalDate()
+            val isExcluded = if (crossesMidnight) {
+                false
+            } else {
+                val slotTimeRange = TimeRange(currentStart.toLocalTime(), slotEnd.toLocalTime())
+                excludedTimeRanges.any { excluded -> slotTimeRange.overlapsWith(excluded) }
             }
 
             if (!isExcluded) {
@@ -106,4 +109,3 @@ data class FrequencyConstraint(
     val maxOccurrences: Int? = null,
     val minGapBetweenOccurrences: Duration? = null
 )
-
