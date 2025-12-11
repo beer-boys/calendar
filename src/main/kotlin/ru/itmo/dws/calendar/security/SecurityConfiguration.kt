@@ -4,6 +4,7 @@ import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointR
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl
 import org.springframework.security.authentication.AuthenticationManager
@@ -15,6 +16,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.oauth2.client.JdbcOAuth2AuthorizedClientService
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import ru.itmo.dws.calendar.configuration.BasePath
@@ -44,7 +48,10 @@ class SecurityConfiguration {
 
     @Bean
     @Order(1)
-    fun googleOAuth2Chain(http: HttpSecurity): SecurityFilterChain {
+    fun googleOAuth2Chain(
+        http: HttpSecurity,
+        authorizedClientService: OAuth2AuthorizedClientService,
+    ): SecurityFilterChain {
         return http
             .csrf { it.disable() }
             .securityMatcher(*GOOGLE_WHITE_LIST.toTypedArray())
@@ -52,10 +59,12 @@ class SecurityConfiguration {
                 it.anyRequest().authenticated()
             }
             .oauth2Login { oauth2 ->
-                oauth2.successHandler { _, response, _ ->
-                    // todo maybe change habit for another in future
-                    response.sendRedirect("${BasePath.GOOGLE_BASE}/calendars")
-                }
+                oauth2
+                    .authorizedClientService(authorizedClientService)
+                    .successHandler { _, response, _ ->
+                        // todo maybe change habit for another in future
+                        response.sendRedirect("${BasePath.GOOGLE_BASE}/calendars")
+                    }
             }
             .build()
     }
@@ -100,5 +109,13 @@ class SecurityConfiguration {
             "ADMIN > USER"
         )
         return roleHierarchy
+    }
+
+    @Bean
+    fun authorizedClientService(
+        jdbcTemplate: JdbcTemplate,
+        clientRegistrationRepository: ClientRegistrationRepository,
+    ): OAuth2AuthorizedClientService {
+        return JdbcOAuth2AuthorizedClientService(jdbcTemplate, clientRegistrationRepository)
     }
 }

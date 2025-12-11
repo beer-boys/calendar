@@ -12,6 +12,6 @@ object BasePath {
     val GOOGLE_WHITE_LIST = listOf(
         "$GOOGLE_BASE/**",
         "$GOOGLE_OAUTH2/**",
-        "$GOOGLE_CALLBACK/**"
+        "$GOOGLE_CALLBACK/**",
     )
 }
