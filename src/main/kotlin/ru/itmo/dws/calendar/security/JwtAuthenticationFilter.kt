@@ -21,6 +21,7 @@ class JwtAuthenticationFilter(
     companion object {
         private const val BEARER = "Bearer "
         private const val AUTH_HEADER = "Authorization"
+        private const val ACCESS_TOKEN_COOKIE = "ACCESS_TOKEN"
         private val log = LoggerFactory.getLogger(this::class.java)
     }
 
@@ -30,17 +31,9 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        val authHeader = request.getHeader(AUTH_HEADER)
+        val token = resolveToken(request)
 
-        if (authHeader == null || !authHeader.startsWith(BEARER)) {
-            filterChain.doFilter(request, response)
-            return
-        }
-
-        val token = authHeader.substring(BEARER.length)
-        val isTokenValid = jwtProvider.isAccessTokenValid(token)
-
-        if (!isTokenValid) {
+        if (token == null || jwtProvider.isAccessTokenValid(token).not()) {
             filterChain.doFilter(request, response)
             return
         }
@@ -63,5 +56,24 @@ class JwtAuthenticationFilter(
         } finally {
             filterChain.doFilter(request, response)
         }
+    }
+
+    /**
+     * Resolve token from request.
+     *
+     * First try to resolve from Authorization header, then from cookie for short-term google oauth2 redirect.
+     */
+    private fun resolveToken(request: HttpServletRequest): String? {
+        val authHeader = request.getHeader(AUTH_HEADER)
+        if (authHeader != null && authHeader.startsWith(BEARER)) {
+            return authHeader.substring(BEARER.length)
+        }
+
+        val cookies = request.cookies
+        if (cookies != null) {
+            return cookies.find { it.name == ACCESS_TOKEN_COOKIE }?.value
+        }
+
+        return null
     }
 }
