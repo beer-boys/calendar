@@ -16,7 +16,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager
 import org.springframework.security.oauth2.client.JdbcOAuth2AuthorizedClientService
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.web.SecurityFilterChain
@@ -117,5 +120,24 @@ class SecurityConfiguration {
         clientRegistrationRepository: ClientRegistrationRepository,
     ): OAuth2AuthorizedClientService {
         return JdbcOAuth2AuthorizedClientService(jdbcTemplate, clientRegistrationRepository)
+    }
+
+    @Bean
+    fun authorizedClientManager(
+        clientRegistrationRepository: ClientRegistrationRepository,
+        authorizedClientService: OAuth2AuthorizedClientService,
+    ): OAuth2AuthorizedClientManager {
+        val authorizedClientProvider = OAuth2AuthorizedClientProviderBuilder.builder()
+            .refreshToken()
+            .authorizationCode()
+            .build()
+
+        val authorizedClientManager = AuthorizedClientServiceOAuth2AuthorizedClientManager(
+            clientRegistrationRepository,
+            authorizedClientService
+        )
+        authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider)
+
+        return authorizedClientManager
     }
 }
