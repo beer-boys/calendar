@@ -53,21 +53,21 @@ class SecurityConfiguration {
     @Order(1)
     fun googleOAuth2Chain(
         http: HttpSecurity,
+        successHandler: UserOAuthSuccessHandler,
+        jwtAuthenticationFilter: JwtAuthenticationFilter,
         authorizedClientService: OAuth2AuthorizedClientService,
     ): SecurityFilterChain {
         return http
             .csrf { it.disable() }
             .securityMatcher(*GOOGLE_WHITE_LIST.toTypedArray())
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             .authorizeHttpRequests {
                 it.anyRequest().authenticated()
             }
             .oauth2Login { oauth2 ->
                 oauth2
                     .authorizedClientService(authorizedClientService)
-                    .successHandler { _, response, _ ->
-                        // todo maybe change habit for another in future
-                        response.sendRedirect("${BasePath.GOOGLE_BASE}/calendars")
-                    }
+                    .successHandler(successHandler)
             }
             .build()
     }

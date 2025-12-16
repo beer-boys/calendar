@@ -21,7 +21,7 @@ class JwtAuthenticationFilter(
     companion object {
         private const val BEARER = "Bearer "
         private const val AUTH_HEADER = "Authorization"
-        private const val ACCESS_TOKEN_COOKIE = "ACCESS_TOKEN"
+        const val ACCESS_TOKEN_COOKIE = "ACCESS_TOKEN_COOKIE"
         private val log = LoggerFactory.getLogger(this::class.java)
     }
 
