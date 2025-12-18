@@ -11,4 +11,9 @@ interface UserOAuthLinkRepository : CrudRepository<UserOAuthLink, Long> {
         userLogin: String,
         clientRegistrationId: String,
     ): UserOAuthLink?
+
+    fun existsByUserLoginAndClientRegistrationId(
+        userLogin: String,
+        clientRegistrationId: String
+    ): Boolean
 }

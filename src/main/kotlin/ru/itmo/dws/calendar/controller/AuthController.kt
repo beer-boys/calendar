@@ -12,16 +12,19 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import ru.itmo.dws.calendar.dto.AuthRequest
 import ru.itmo.dws.calendar.dto.AuthResponse
+import ru.itmo.dws.calendar.dto.LinkResponse
 import ru.itmo.dws.calendar.dto.RefreshTokenRequest
 import ru.itmo.dws.calendar.dto.RegisterDtoRequest
 import ru.itmo.dws.calendar.dto.RegisterDtoResponse
 import ru.itmo.dws.calendar.security.JwtAuthenticationFilter.Companion.ACCESS_TOKEN_COOKIE
+import ru.itmo.dws.calendar.security.OAuth2Service
 import ru.itmo.dws.calendar.service.AuthService
 
 @RestController
 @RequestMapping("/api/v1/auth")
 class AuthController(
     private val authService: AuthService,
+    private val oAuth2Service: OAuth2Service,
 ) {
 
     @PostMapping("/login")
@@ -46,12 +49,16 @@ class AuthController(
     fun initGoogleAuth(
         request: HttpServletRequest,
         response: HttpServletResponse,
-    ): ResponseEntity<*> {
+    ): ResponseEntity<LinkResponse> {
+        if (oAuth2Service.exists(request.userPrincipal?.name!!, "google")) {
+            return ResponseEntity.ok(LinkResponse(true))
+        }
+
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         val token = if (authHeader != null && authHeader.startsWith("Bearer ")) {
             authHeader.substring(7)
         } else {
-            return ResponseEntity.status(401).body("Missing Bearer Token")
+            return ResponseEntity.status(401).build()
         }
 
         val cookie = ResponseCookie.from(ACCESS_TOKEN_COOKIE, token)
@@ -64,6 +71,6 @@ class AuthController(
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
 
-        return ResponseEntity.ok(mapOf("targetUrl" to "/oauth2/authorization/google"))
+        return ResponseEntity.ok(LinkResponse(false, "/oauth2/authorization/google"))
     }
 }
