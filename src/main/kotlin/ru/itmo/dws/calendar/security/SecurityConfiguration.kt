@@ -13,6 +13,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -41,6 +42,7 @@ class SecurityConfiguration {
     ): SecurityFilterChain {
         return http
             .csrf { it.disable() }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
                 it.requestMatchers(*WHITE_LIST.toTypedArray()).permitAll()
                 it.requestMatchers("${BasePath.BASE}/**").authenticated()
@@ -60,6 +62,7 @@ class SecurityConfiguration {
         return http
             .csrf { it.disable() }
             .securityMatcher(*GOOGLE_WHITE_LIST.toTypedArray())
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             .authorizeHttpRequests {
                 it.anyRequest().authenticated()

@@ -1,13 +1,14 @@
 package ru.itmo.dws.calendar.security
 
+import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
-import ru.itmo.dws.calendar.configuration.BasePath
 import ru.itmo.dws.calendar.model.UserOAuthLink
 import ru.itmo.dws.calendar.repository.UserOAuthLinkRepository
 import ru.itmo.dws.calendar.security.jwt.JwtProvider
@@ -48,7 +49,16 @@ class UserOAuthSuccessHandler(
 
                 linkRepository.save(linkToSave)
 
-                response.sendRedirect("${BasePath.GOOGLE_BASE}/calendars")
+                val deleteCookie = Cookie(JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE, null)
+                deleteCookie.path = "/"
+                deleteCookie.maxAge = 0
+                response.addCookie(deleteCookie)
+
+                SecurityContextHolder.clearContext()
+                request.getSession(false)?.invalidate()
+
+                // todo extract to properties
+                response.sendRedirect("/readyz")
             } else {
                 response.sendRedirect("/auth/error?reason=not_oauth_token")
             }
