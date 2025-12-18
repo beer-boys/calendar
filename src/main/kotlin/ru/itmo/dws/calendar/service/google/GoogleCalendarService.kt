@@ -1,6 +1,5 @@
 package ru.itmo.dws.calendar.service.google
 
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import org.springframework.stereotype.Service
 import ru.itmo.dws.calendar.provider.GoogleCalendarProvider
 
@@ -9,15 +8,15 @@ class GoogleCalendarService(
     private val googleCalendarProvider: GoogleCalendarProvider,
 ) {
     fun getCalendars(
-        authentication: OAuth2AuthenticationToken
+        username: String,
     ): Map<String, String> {
-        return googleCalendarProvider.getCalendars(authentication)
+        return googleCalendarProvider.getCalendars(username)
     }
 
     fun getCalendarById(
-        authentication: OAuth2AuthenticationToken,
+        username: String,
         calendarId: String,
     ): String {
-        return googleCalendarProvider.getCalendarById(authentication, calendarId)
+        return googleCalendarProvider.getCalendarById(username, calendarId)
     }
 }
