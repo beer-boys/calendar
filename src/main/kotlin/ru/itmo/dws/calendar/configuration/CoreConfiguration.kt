@@ -10,6 +10,7 @@ import ru.itmo.dws.calendar.core.port.output.MeetingRepository
 import ru.itmo.dws.calendar.core.service.ConflictDetectionService
 import ru.itmo.dws.calendar.core.service.EventSlotFinder
 import ru.itmo.dws.calendar.core.service.HabitManagementService
+import ru.itmo.dws.calendar.core.service.HabitSchedulingService
 import ru.itmo.dws.calendar.core.service.provider.FocusTimeEventProvider
 import ru.itmo.dws.calendar.core.service.provider.HabitEventProvider
 import ru.itmo.dws.calendar.core.service.provider.MeetingEventProvider
@@ -55,17 +56,35 @@ class CoreConfiguration {
     }
 
     @Bean
+    fun habitSchedulingService(
+        eventProviders: List<SchedulableEventProvider>,
+        eventSlotFinder: EventSlotFinder,
+        calendarProvider: ru.itmo.dws.calendar.core.port.output.CalendarProvider?
+    ): HabitSchedulingService {
+        return HabitSchedulingService(
+            eventProviders = eventProviders,
+            eventSlotFinder = eventSlotFinder,
+            calendarProvider = calendarProvider,
+            zoneId = ZoneId.systemDefault()
+        )
+    }
+
+    @Bean
     fun habitManagementUseCase(
         habitRepository: HabitRepository,
         eventProviders: List<SchedulableEventProvider>,
         eventSlotFinder: EventSlotFinder,
-        conflictDetectionService: ConflictDetectionService
+        conflictDetectionService: ConflictDetectionService,
+        habitSchedulingService: HabitSchedulingService,
+        calendarProvider: ru.itmo.dws.calendar.core.port.output.CalendarProvider?
     ): HabitManagementUseCase {
         return HabitManagementService(
             habitRepository = habitRepository,
             eventProviders = eventProviders,
             eventSlotFinder = eventSlotFinder,
             conflictDetectionService = conflictDetectionService,
+            habitSchedulingService = habitSchedulingService,
+            calendarProvider = calendarProvider,
             zoneId = ZoneId.systemDefault()
         )
     }

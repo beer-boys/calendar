@@ -54,11 +54,19 @@ class HabitManagementServiceTest {
         val conflictDetectionService = ConflictDetectionService(eventProviders)
         val eventSlotFinder = EventSlotFinder(defaultZoneId = zoneId)
 
+        val habitSchedulingService = HabitSchedulingService(
+            eventProviders = eventProviders,
+            eventSlotFinder = eventSlotFinder,
+            calendarProvider = null,
+            zoneId = zoneId
+        )
+
         habitManagementService = HabitManagementService(
             habitRepository = habitRepository,
             eventProviders = eventProviders,
             eventSlotFinder = eventSlotFinder,
             conflictDetectionService = conflictDetectionService,
+            habitSchedulingService = habitSchedulingService,
             calendarProvider = null,
             zoneId = zoneId
         )

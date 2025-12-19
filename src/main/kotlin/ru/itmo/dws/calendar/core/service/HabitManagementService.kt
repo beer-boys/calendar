@@ -8,6 +8,8 @@ import ru.itmo.dws.calendar.core.domain.model.CreateHabitRequest
 import ru.itmo.dws.calendar.core.domain.model.EventType
 import ru.itmo.dws.calendar.core.domain.model.Habit
 import ru.itmo.dws.calendar.core.domain.model.HabitConflict
+import ru.itmo.dws.calendar.core.domain.model.HabitOccurrence
+import ru.itmo.dws.calendar.core.domain.model.HabitSchedulePlan
 import ru.itmo.dws.calendar.core.domain.model.UpdateHabitRequest
 import ru.itmo.dws.calendar.core.domain.model.toHabitConflict
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
@@ -16,15 +18,21 @@ import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 import ru.itmo.dws.calendar.core.port.input.HabitCreationResult
 import ru.itmo.dws.calendar.core.port.input.HabitCreationStatus
 import ru.itmo.dws.calendar.core.port.input.HabitManagementUseCase
+import ru.itmo.dws.calendar.core.port.input.HabitSyncResult
 import ru.itmo.dws.calendar.core.port.output.CalendarProvider
+import ru.itmo.dws.calendar.core.port.output.HabitOccurrenceRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
 import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
 
+@Suppress("LongParameterList")
 class HabitManagementService(
     private val habitRepository: HabitRepository,
+    private val occurrenceRepository: HabitOccurrenceRepository,
     private val eventProviders: List<SchedulableEventProvider>,
     private val eventSlotFinder: EventSlotFinder,
     private val conflictDetectionService: ConflictDetectionService,
+    private val habitSchedulingService: HabitSchedulingService,
+    private val habitSyncService: HabitSyncService,
     private val calendarProvider: CalendarProvider? = null,
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) : HabitManagementUseCase {
@@ -125,6 +133,47 @@ class HabitManagementService(
         habitRepository.updateHabit(habitId, clearedHabit)
 
         return clearedHabit
+    }
+
+    override fun planHabitSchedule(habitId: HabitId, weeks: Int): HabitSchedulePlan {
+        val habit = habitRepository.findHabit(habitId)
+            ?: throw IllegalArgumentException("Habit not found: $habitId")
+
+        return habitSchedulingService.planSchedule(habit, weeks)
+    }
+
+    override fun syncHabitToExternalCalendar(habitId: HabitId, weeks: Int): HabitSyncResult {
+        val habit = habitRepository.findHabit(habitId)
+            ?: throw IllegalArgumentException("Habit not found: $habitId")
+
+        val plan = habitSchedulingService.planSchedule(habit, weeks)
+
+        val syncResult = habitSyncService.syncOccurrencesToExternalCalendar(habit, plan.occurrences)
+
+        log.info(
+            "Synced habit {} to external calendar: {} synced, {} failed, {} skipped",
+            habitId, syncResult.syncedCount, syncResult.failedCount, syncResult.skippedCount
+        )
+
+        return HabitSyncResult(
+            habitId = habitId,
+            syncedCount = syncResult.syncedCount,
+            failedCount = syncResult.failedCount,
+            skippedCount = syncResult.skippedCount,
+            occurrences = syncResult.occurrences
+        )
+    }
+
+    override fun getHabitOccurrences(habitId: HabitId): List<HabitOccurrence> {
+        return occurrenceRepository.findByHabitId(habitId)
+    }
+
+    override fun getHabitOccurrences(
+        habitId: HabitId,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): List<HabitOccurrence> {
+        return occurrenceRepository.findByHabitIdAndDateRange(habitId, startDate, endDate)
     }
 
     private fun findSlotForDate(

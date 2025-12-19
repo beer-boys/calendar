@@ -23,6 +23,7 @@ import ru.itmo.dws.calendar.core.port.input.HabitManagementUseCase
 import ru.itmo.dws.calendar.dto.habit.CreateHabitRequestDto
 import ru.itmo.dws.calendar.dto.habit.HabitCreationResultDto
 import ru.itmo.dws.calendar.dto.habit.HabitResponseDto
+import ru.itmo.dws.calendar.dto.habit.HabitSchedulePlanDto
 import ru.itmo.dws.calendar.dto.habit.ScheduleHabitRequestDto
 import ru.itmo.dws.calendar.dto.habit.UpdateHabitRequestDto
 import ru.itmo.dws.calendar.model.User
@@ -76,6 +77,23 @@ class HabitController(
         }
 
         return ResponseEntity.ok(HabitResponseDto.fromDomain(habit))
+    }
+
+    @GetMapping("/{habitId}/plan")
+    fun getHabitSchedulePlan(
+        @AuthenticationPrincipal user: User,
+        @PathVariable habitId: UUID,
+        @RequestParam(defaultValue = "4") weeks: Int
+    ): ResponseEntity<HabitSchedulePlanDto> {
+        val habit = habitManagementUseCase.getHabit(HabitId(habitId))
+            ?: throw HabitNotFoundException(HabitId(habitId))
+
+        if (habit.userId.value != user.id) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
+
+        val plan = habitManagementUseCase.planHabitSchedule(HabitId(habitId), weeks)
+        return ResponseEntity.ok(HabitSchedulePlanDto.fromDomain(plan))
     }
 
     @PutMapping("/{habitId}")
