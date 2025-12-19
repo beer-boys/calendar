@@ -98,7 +98,7 @@ class JdbcHabitRepositoryAdapter(
             .addValue("id", habit.id.value)
             .addValue("userId", habit.userId.value)
             .addValue("entityType", ENTITY_TYPE)
-            .addValue("externalEventId", null)
+            .addValue("externalEventId", habit.externalEventId)
             .addValue("title", habit.title)
             .addValue("description", habit.description)
             .addValue("priority", habit.priority.value)
@@ -137,7 +137,7 @@ class JdbcHabitRepositoryAdapter(
             .addValue("description", habit.description)
             .addValue("priority", habit.priority.value)
             .addValue("metadata", metadataJson)
-            .addValue("externalEventId", null)
+            .addValue("externalEventId", habit.externalEventId)
 
         return jdbcTemplate.update(UPDATE_SQL, params) > 0
     }
@@ -264,7 +264,8 @@ class JdbcHabitRepositoryAdapter(
                 priority = Priority(rs.getInt("priority")),
                 currentTimeSlot = currentTimeSlot,
                 bufferTime = bufferTime,
-                schedulingRules = rules
+                schedulingRules = rules,
+                externalEventId = rs.getString("external_event_id")
             )
         }
 

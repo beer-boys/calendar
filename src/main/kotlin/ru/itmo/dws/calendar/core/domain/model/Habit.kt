@@ -24,7 +24,8 @@ data class Habit(
     override val priority: Priority = Priority.forHabit(),
     val currentTimeSlot: TimeSlot? = null,
     val bufferTime: BufferDuration = BufferDuration.NONE,
-    override val schedulingRules: List<SchedulingRule> = emptyList()
+    override val schedulingRules: List<SchedulingRule> = emptyList(),
+    val externalEventId: String? = null
 ) : SchedulableEvent {
 
     override val eventId: String get() = id.toString()
@@ -74,6 +75,8 @@ data class Habit(
     fun withPriority(newPriority: Priority): Habit = copy(priority = newPriority)
 
     fun withBufferTime(newBufferTime: BufferDuration): Habit = copy(bufferTime = newBufferTime)
+
+    fun withExternalEventId(eventId: String): Habit = copy(externalEventId = eventId)
 
     fun preferredStartTime(): LocalTime? = flexibilityWindow.preferredDuration?.let {
         flexibilityWindow.earliestTime

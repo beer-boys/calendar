@@ -24,7 +24,8 @@ data class HabitResponseDto(
     val bufferBeforeMinutes: Long,
     val bufferAfterMinutes: Long,
     val currentTimeSlot: TimeSlotResponseDto?,
-    val rules: List<SchedulingRuleResponseDto>
+    val rules: List<SchedulingRuleResponseDto>,
+    val externalEventId: String?
 ) {
     companion object {
         fun fromDomain(habit: Habit): HabitResponseDto {
@@ -37,6 +38,7 @@ data class HabitResponseDto(
                     frequency = habit.recurrenceRule.frequency.name,
                     daysOfWeek = habit.recurrenceRule.daysOfWeek,
                     interval = habit.recurrenceRule.interval,
+                    startDate = habit.recurrenceRule.startDate,
                     endDate = habit.recurrenceRule.endDate
                 ),
                 flexibility = FlexibilityResponseDto(
@@ -51,7 +53,8 @@ data class HabitResponseDto(
                 currentTimeSlot = habit.currentTimeSlot?.let {
                     TimeSlotResponseDto(start = it.start, end = it.end)
                 },
-                rules = habit.schedulingRules.map { SchedulingRuleResponseDto.fromDomain(it) }
+                rules = habit.schedulingRules.map { SchedulingRuleResponseDto.fromDomain(it) },
+                externalEventId = habit.externalEventId
             )
         }
     }
@@ -61,6 +64,7 @@ data class RecurrenceResponseDto(
     val frequency: String,
     val daysOfWeek: Set<DayOfWeek>,
     val interval: Int,
+    val startDate: LocalDate,
     val endDate: LocalDate?
 )
 
