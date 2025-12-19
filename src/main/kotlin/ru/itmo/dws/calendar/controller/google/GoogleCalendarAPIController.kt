@@ -6,9 +6,10 @@ import com.google.api.services.calendar.model.Colors
 import com.google.api.services.calendar.model.Event
 import com.google.api.services.calendar.model.Events
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -38,25 +39,25 @@ class GoogleCalendarAPIController(
     fun getToken(
         @RegisteredOAuth2AuthorizedClient("google") client: OAuth2AuthorizedClient
     ): Pair<String, String> {
-        return Pair<String, String>(client.accessToken.tokenValue, client.refreshToken!!.tokenValue)
+        return client.accessToken.tokenValue to client.refreshToken!!.tokenValue
     }
 
     // calendar region
     @GetMapping("/calendars")
     fun getCalendars(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: UserDetails,
     ): Map<String, String> {
-        return googleCalendarService.getCalendars(authentication)
+        return googleCalendarService.getCalendars(user.username)
     }
 
     @GetMapping("/calendars/{calendarId}")
     fun getCalendarById(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: UserDetails,
         @PathVariable calendarId: String
     ): ResponseEntity<CalendarListEntry> {
         return ResponseEntity.ok(
             gsonFactory.fromString(
-                googleCalendarService.getCalendarById(authentication, calendarId),
+                googleCalendarService.getCalendarById(user.username, calendarId),
                 CalendarListEntry::class.java
             )
         )
@@ -66,12 +67,12 @@ class GoogleCalendarAPIController(
     // calendar events region
     @GetMapping("/calendars/{calendarId}/events")
     fun getCalendarEvents(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: UserDetails,
         @PathVariable calendarId: String
     ): ResponseEntity<Events> {
         return ResponseEntity.ok(
             gsonFactory.fromString(
-                googleCalendarEventsService.getEventsByCalendarId(authentication, calendarId),
+                googleCalendarEventsService.getEventsByCalendarId(user.username, calendarId),
                 Events::class.java
             )
         )
@@ -79,13 +80,13 @@ class GoogleCalendarAPIController(
 
     @GetMapping("/calendars/{calendarId}/events/{eventId}")
     fun getCalendarEventById(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: UserDetails,
         @PathVariable calendarId: String,
         @PathVariable eventId: String,
     ): ResponseEntity<Event> {
         return ResponseEntity.ok(
             gsonFactory.fromString(
-                googleCalendarEventsService.getEventByEventIdAndCalendarId(authentication, calendarId, eventId),
+                googleCalendarEventsService.getEventByEventIdAndCalendarId(user.username, calendarId, eventId),
                 Event::class.java
             )
         )
@@ -93,7 +94,7 @@ class GoogleCalendarAPIController(
 
     @PostMapping("/calendars/{calendarId}/events/quickAdd")
     fun quickAdd(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: UserDetails,
         @PathVariable calendarId: String,
         @RequestParam text: String,
         @RequestParam(required = false) sendNotifications: Boolean?,
@@ -101,23 +102,23 @@ class GoogleCalendarAPIController(
         @RequestParam(required = false) sendUpdates: String?
     ): ResponseEntity<Event?> {
         return ResponseEntity.ok(
-            googleCalendarEventsService.quickAddEvent(authentication, calendarId, text, sendNotifications, sendUpdates)
+            googleCalendarEventsService.quickAddEvent(user.username, calendarId, text, sendNotifications, sendUpdates)
         )
     }
 
     @DeleteMapping("/calendars/{calendarId}/events/{eventId}")
     fun deleteEventById(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: UserDetails,
         @PathVariable calendarId: String,
         @PathVariable eventId: String,
     ): ResponseEntity<String> {
-        googleCalendarEventsService.deleteEventById(authentication, calendarId, eventId)
+        googleCalendarEventsService.deleteEventById(user.username, calendarId, eventId)
         return ResponseEntity.ok("ok")
     }
 
     @PostMapping("/calendars/{calendarId}/events")
     fun createEvent(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: UserDetails,
         @PathVariable calendarId: String,
         @RequestBody request: CreateEventRequest,
         @RequestParam(required = false) conferenceDataVersion: Int?,
@@ -129,7 +130,7 @@ class GoogleCalendarAPIController(
     ): ResponseEntity<Event?> {
         return ResponseEntity.ok(
             googleCalendarEventsService.createEvent(
-                authentication,
+                user.username,
                 calendarId,
                 request,
                 conferenceDataVersion,
@@ -143,7 +144,7 @@ class GoogleCalendarAPIController(
 
     @PatchMapping("/calendars/{calendarId}/events/{eventId}")
     fun patchEvent(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: UserDetails,
         @PathVariable calendarId: String,
         @PathVariable eventId: String,
         @RequestBody request: CreateEventRequest,
@@ -156,7 +157,7 @@ class GoogleCalendarAPIController(
     ): ResponseEntity<Event?> {
         return ResponseEntity.ok(
             googleCalendarEventsService.patchEvent(
-                authentication,
+                user.username,
                 calendarId,
                 eventId,
                 request,
@@ -173,10 +174,10 @@ class GoogleCalendarAPIController(
     // colors region
     @GetMapping("/colors")
     fun getAvailableColors(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Colors> {
         return ResponseEntity.ok(
-            googleCalendarColorsService.getAvailableColors(authentication)
+            googleCalendarColorsService.getAvailableColors(user.username)
         )
     }
     // end region

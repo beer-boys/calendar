@@ -4,6 +4,7 @@ import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointR
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl
 import org.springframework.security.authentication.AuthenticationManager
@@ -12,9 +13,16 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager
+import org.springframework.security.oauth2.client.JdbcOAuth2AuthorizedClientService
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import ru.itmo.dws.calendar.configuration.BasePath
@@ -34,6 +42,7 @@ class SecurityConfiguration {
     ): SecurityFilterChain {
         return http
             .csrf { it.disable() }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
                 it.requestMatchers(*WHITE_LIST.toTypedArray()).permitAll()
                 it.requestMatchers("${BasePath.BASE}/**").authenticated()
@@ -44,18 +53,24 @@ class SecurityConfiguration {
 
     @Bean
     @Order(1)
-    fun googleOAuth2Chain(http: HttpSecurity): SecurityFilterChain {
+    fun googleOAuth2Chain(
+        http: HttpSecurity,
+        successHandler: UserOAuthSuccessHandler,
+        jwtAuthenticationFilter: JwtAuthenticationFilter,
+        authorizedClientService: OAuth2AuthorizedClientService,
+    ): SecurityFilterChain {
         return http
             .csrf { it.disable() }
             .securityMatcher(*GOOGLE_WHITE_LIST.toTypedArray())
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             .authorizeHttpRequests {
                 it.anyRequest().authenticated()
             }
             .oauth2Login { oauth2 ->
-                oauth2.successHandler { _, response, _ ->
-                    // todo maybe change habit for another in future
-                    response.sendRedirect("${BasePath.GOOGLE_BASE}/calendars")
-                }
+                oauth2
+                    .authorizedClientService(authorizedClientService)
+                    .successHandler(successHandler)
             }
             .build()
     }
@@ -100,5 +115,32 @@ class SecurityConfiguration {
             "ADMIN > USER"
         )
         return roleHierarchy
+    }
+
+    @Bean
+    fun authorizedClientService(
+        jdbcTemplate: JdbcTemplate,
+        clientRegistrationRepository: ClientRegistrationRepository,
+    ): OAuth2AuthorizedClientService {
+        return JdbcOAuth2AuthorizedClientService(jdbcTemplate, clientRegistrationRepository)
+    }
+
+    @Bean
+    fun authorizedClientManager(
+        clientRegistrationRepository: ClientRegistrationRepository,
+        authorizedClientService: OAuth2AuthorizedClientService,
+    ): OAuth2AuthorizedClientManager {
+        val authorizedClientProvider = OAuth2AuthorizedClientProviderBuilder.builder()
+            .refreshToken()
+            .authorizationCode()
+            .build()
+
+        val authorizedClientManager = AuthorizedClientServiceOAuth2AuthorizedClientManager(
+            clientRegistrationRepository,
+            authorizedClientService
+        )
+        authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider)
+
+        return authorizedClientManager
     }
 }
