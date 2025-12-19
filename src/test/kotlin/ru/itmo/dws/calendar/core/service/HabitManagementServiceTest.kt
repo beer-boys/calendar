@@ -23,6 +23,7 @@ import ru.itmo.dws.calendar.core.domain.valueobject.RecurrenceRule
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 import ru.itmo.dws.calendar.core.port.input.HabitCreationStatus
 import ru.itmo.dws.calendar.core.repository.InMemoryFocusTimeRepository
+import ru.itmo.dws.calendar.core.repository.InMemoryHabitOccurrenceRepository
 import ru.itmo.dws.calendar.core.repository.InMemoryHabitRepository
 import ru.itmo.dws.calendar.core.repository.InMemoryMeetingRepository
 import ru.itmo.dws.calendar.core.service.provider.FocusTimeEventProvider
@@ -61,12 +62,21 @@ class HabitManagementServiceTest {
             zoneId = zoneId
         )
 
+        val occurrenceRepository = InMemoryHabitOccurrenceRepository()
+
+        val habitSyncService = HabitSyncService(
+            occurrenceRepository = occurrenceRepository,
+            calendarProvider = null
+        )
+
         habitManagementService = HabitManagementService(
             habitRepository = habitRepository,
+            occurrenceRepository = occurrenceRepository,
             eventProviders = eventProviders,
             eventSlotFinder = eventSlotFinder,
             conflictDetectionService = conflictDetectionService,
             habitSchedulingService = habitSchedulingService,
+            habitSyncService = habitSyncService,
             calendarProvider = null,
             zoneId = zoneId
         )
