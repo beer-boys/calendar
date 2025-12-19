@@ -5,6 +5,7 @@ import java.time.ZonedDateTime
 import java.util.UUID
 import ru.itmo.dws.calendar.core.domain.model.HabitOccurrence
 import ru.itmo.dws.calendar.core.domain.model.HabitSchedulePlan
+import ru.itmo.dws.calendar.core.port.input.HabitSyncResult
 
 data class HabitSchedulePlanDto(
     val habitId: UUID,
@@ -37,7 +38,9 @@ data class HabitOccurrenceDto(
     val status: String,
     val startTime: ZonedDateTime?,
     val endTime: ZonedDateTime?,
-    val reason: String?
+    val reason: String?,
+    val externalEventId: String?,
+    val isSynced: Boolean
 ) {
     companion object {
         fun fromDomain(occurrence: HabitOccurrence): HabitOccurrenceDto {
@@ -46,7 +49,9 @@ data class HabitOccurrenceDto(
                 status = occurrence.status.name,
                 startTime = occurrence.timeSlot?.start,
                 endTime = occurrence.timeSlot?.end,
-                reason = occurrence.reason
+                reason = occurrence.reason,
+                externalEventId = occurrence.externalEventId,
+                isSynced = occurrence.isSynced
             )
         }
     }
@@ -57,3 +62,27 @@ data class ScheduleSummaryDto(
     val scheduledDays: Int,
     val unscheduledDays: Int
 )
+
+data class HabitSyncResultDto(
+    val habitId: UUID,
+    val syncedCount: Int,
+    val failedCount: Int,
+    val skippedCount: Int,
+    val totalCount: Int,
+    val isFullySuccessful: Boolean,
+    val occurrences: List<HabitOccurrenceDto>
+) {
+    companion object {
+        fun fromDomain(result: HabitSyncResult): HabitSyncResultDto {
+            return HabitSyncResultDto(
+                habitId = result.habitId.value,
+                syncedCount = result.syncedCount,
+                failedCount = result.failedCount,
+                skippedCount = result.skippedCount,
+                totalCount = result.totalCount,
+                isFullySuccessful = result.isFullySuccessful,
+                occurrences = result.occurrences.map { HabitOccurrenceDto.fromDomain(it) }
+            )
+        }
+    }
+}

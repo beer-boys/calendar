@@ -22,8 +22,10 @@ import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 import ru.itmo.dws.calendar.core.port.input.HabitManagementUseCase
 import ru.itmo.dws.calendar.dto.habit.CreateHabitRequestDto
 import ru.itmo.dws.calendar.dto.habit.HabitCreationResultDto
+import ru.itmo.dws.calendar.dto.habit.HabitOccurrenceDto
 import ru.itmo.dws.calendar.dto.habit.HabitResponseDto
 import ru.itmo.dws.calendar.dto.habit.HabitSchedulePlanDto
+import ru.itmo.dws.calendar.dto.habit.HabitSyncResultDto
 import ru.itmo.dws.calendar.dto.habit.ScheduleHabitRequestDto
 import ru.itmo.dws.calendar.dto.habit.UpdateHabitRequestDto
 import ru.itmo.dws.calendar.model.User
@@ -175,5 +177,45 @@ class HabitController(
         )
 
         return ResponseEntity.ok(HabitResponseDto.fromDomain(clearedHabit))
+    }
+
+    @PostMapping("/{habitId}/sync")
+    fun syncHabitToExternalCalendar(
+        @AuthenticationPrincipal user: User,
+        @PathVariable habitId: UUID,
+        @RequestParam(defaultValue = "4") weeks: Int
+    ): ResponseEntity<HabitSyncResultDto> {
+        val habit = habitManagementUseCase.getHabit(HabitId(habitId))
+            ?: throw HabitNotFoundException(HabitId(habitId))
+
+        if (habit.userId.value != user.id) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
+
+        val result = habitManagementUseCase.syncHabitToExternalCalendar(HabitId(habitId), weeks)
+        return ResponseEntity.ok(HabitSyncResultDto.fromDomain(result))
+    }
+
+    @GetMapping("/{habitId}/occurrences")
+    fun getHabitOccurrences(
+        @AuthenticationPrincipal user: User,
+        @PathVariable habitId: UUID,
+        @RequestParam(required = false) startDate: LocalDate?,
+        @RequestParam(required = false) endDate: LocalDate?
+    ): ResponseEntity<List<HabitOccurrenceDto>> {
+        val habit = habitManagementUseCase.getHabit(HabitId(habitId))
+            ?: throw HabitNotFoundException(HabitId(habitId))
+
+        if (habit.userId.value != user.id) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
+
+        val occurrences = if (startDate != null && endDate != null) {
+            habitManagementUseCase.getHabitOccurrences(HabitId(habitId), startDate, endDate)
+        } else {
+            habitManagementUseCase.getHabitOccurrences(HabitId(habitId))
+        }
+
+        return ResponseEntity.ok(occurrences.map { HabitOccurrenceDto.fromDomain(it) })
     }
 }

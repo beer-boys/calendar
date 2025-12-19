@@ -5,12 +5,14 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import ru.itmo.dws.calendar.core.port.input.HabitManagementUseCase
 import ru.itmo.dws.calendar.core.port.output.FocusTimeRepository
+import ru.itmo.dws.calendar.core.port.output.HabitOccurrenceRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
 import ru.itmo.dws.calendar.core.port.output.MeetingRepository
 import ru.itmo.dws.calendar.core.service.ConflictDetectionService
 import ru.itmo.dws.calendar.core.service.EventSlotFinder
 import ru.itmo.dws.calendar.core.service.HabitManagementService
 import ru.itmo.dws.calendar.core.service.HabitSchedulingService
+import ru.itmo.dws.calendar.core.service.HabitSyncService
 import ru.itmo.dws.calendar.core.service.provider.FocusTimeEventProvider
 import ru.itmo.dws.calendar.core.service.provider.HabitEventProvider
 import ru.itmo.dws.calendar.core.service.provider.MeetingEventProvider
@@ -70,20 +72,35 @@ class CoreConfiguration {
     }
 
     @Bean
+    fun habitSyncService(
+        occurrenceRepository: HabitOccurrenceRepository,
+        calendarProvider: ru.itmo.dws.calendar.core.port.output.CalendarProvider?
+    ): HabitSyncService {
+        return HabitSyncService(
+            occurrenceRepository = occurrenceRepository,
+            calendarProvider = calendarProvider
+        )
+    }
+
+    @Bean
     fun habitManagementUseCase(
         habitRepository: HabitRepository,
+        occurrenceRepository: HabitOccurrenceRepository,
         eventProviders: List<SchedulableEventProvider>,
         eventSlotFinder: EventSlotFinder,
         conflictDetectionService: ConflictDetectionService,
         habitSchedulingService: HabitSchedulingService,
+        habitSyncService: HabitSyncService,
         calendarProvider: ru.itmo.dws.calendar.core.port.output.CalendarProvider?
     ): HabitManagementUseCase {
         return HabitManagementService(
             habitRepository = habitRepository,
+            occurrenceRepository = occurrenceRepository,
             eventProviders = eventProviders,
             eventSlotFinder = eventSlotFinder,
             conflictDetectionService = conflictDetectionService,
             habitSchedulingService = habitSchedulingService,
+            habitSyncService = habitSyncService,
             calendarProvider = calendarProvider,
             zoneId = ZoneId.systemDefault()
         )

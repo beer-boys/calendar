@@ -24,7 +24,7 @@ import ru.itmo.dws.calendar.core.port.output.HabitOccurrenceRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
 import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class HabitManagementService(
     private val habitRepository: HabitRepository,
     private val occurrenceRepository: HabitOccurrenceRepository,
@@ -106,6 +106,7 @@ class HabitManagementService(
     override fun deleteHabit(habitId: HabitId) {
         val habit = habitRepository.findHabit(habitId)
         if (habit != null) {
+            habitSyncService.deleteAllOccurrencesFromExternalCalendar(habit)
             deleteFromExternalCalendar(habit)
         }
         habitRepository.deleteHabit(habitId)
@@ -152,7 +153,10 @@ class HabitManagementService(
 
         log.info(
             "Synced habit {} to external calendar: {} synced, {} failed, {} skipped",
-            habitId, syncResult.syncedCount, syncResult.failedCount, syncResult.skippedCount
+            habitId,
+            syncResult.syncedCount,
+            syncResult.failedCount,
+            syncResult.skippedCount
         )
 
         return HabitSyncResult(
