@@ -1,9 +1,11 @@
 package ru.itmo.dws.calendar.configuration
 
 import java.time.ZoneId
+import java.util.Optional
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import ru.itmo.dws.calendar.core.port.input.HabitManagementUseCase
+import ru.itmo.dws.calendar.core.port.output.CalendarProvider
 import ru.itmo.dws.calendar.core.port.output.FocusTimeRepository
 import ru.itmo.dws.calendar.core.port.output.HabitOccurrenceRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
@@ -61,12 +63,12 @@ class CoreConfiguration {
     fun habitSchedulingService(
         eventProviders: List<SchedulableEventProvider>,
         eventSlotFinder: EventSlotFinder,
-        calendarProvider: ru.itmo.dws.calendar.core.port.output.CalendarProvider?
+        calendarProvider: Optional<CalendarProvider>
     ): HabitSchedulingService {
         return HabitSchedulingService(
             eventProviders = eventProviders,
             eventSlotFinder = eventSlotFinder,
-            calendarProvider = calendarProvider,
+            calendarProvider = calendarProvider.orElse(null),
             zoneId = ZoneId.systemDefault()
         )
     }
@@ -74,11 +76,11 @@ class CoreConfiguration {
     @Bean
     fun habitSyncService(
         occurrenceRepository: HabitOccurrenceRepository,
-        calendarProvider: ru.itmo.dws.calendar.core.port.output.CalendarProvider?
+        calendarProvider: Optional<CalendarProvider>
     ): HabitSyncService {
         return HabitSyncService(
             occurrenceRepository = occurrenceRepository,
-            calendarProvider = calendarProvider
+            calendarProvider = calendarProvider.orElse(null)
         )
     }
 
@@ -91,7 +93,7 @@ class CoreConfiguration {
         conflictDetectionService: ConflictDetectionService,
         habitSchedulingService: HabitSchedulingService,
         habitSyncService: HabitSyncService,
-        calendarProvider: ru.itmo.dws.calendar.core.port.output.CalendarProvider?
+        calendarProvider: Optional<CalendarProvider>
     ): HabitManagementUseCase {
         return HabitManagementService(
             habitRepository = habitRepository,
@@ -101,7 +103,7 @@ class CoreConfiguration {
             conflictDetectionService = conflictDetectionService,
             habitSchedulingService = habitSchedulingService,
             habitSyncService = habitSyncService,
-            calendarProvider = calendarProvider,
+            calendarProvider = calendarProvider.orElse(null),
             zoneId = ZoneId.systemDefault()
         )
     }

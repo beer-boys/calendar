@@ -79,4 +79,3 @@ open class InMemoryHabitOccurrenceRepository : HabitOccurrenceRepository {
         return keysToRemove.size
     }
 }
-
