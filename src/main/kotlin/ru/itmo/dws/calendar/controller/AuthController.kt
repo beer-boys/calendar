@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import ru.itmo.dws.calendar.configuration.BasePath
 import ru.itmo.dws.calendar.dto.AuthRequest
 import ru.itmo.dws.calendar.dto.AuthResponse
 import ru.itmo.dws.calendar.dto.LinkResponse
@@ -71,6 +72,6 @@ class AuthController(
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
 
-        return ResponseEntity.ok(LinkResponse(false, "/oauth2/authorization/google"))
+        return ResponseEntity.ok(LinkResponse(false, BasePath.GOOGLE_OAUTH2))
     }
 }
