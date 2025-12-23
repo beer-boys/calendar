@@ -9,7 +9,7 @@ data class MeetingRoomBooking(
     val id: MeetingRoomBookingId,
     val roomId: MeetingRoomId,
     val timeSlot: TimeSlot,
-    val organizer: UserId,
+    val organizerId: UserId,
     val purpose: String? = null,
     val status: BookingStatus = BookingStatus.CONFIRMED
 ) {
