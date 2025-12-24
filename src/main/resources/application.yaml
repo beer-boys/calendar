@@ -94,3 +94,7 @@ outbox:
   stuckThreshold: 10m
   pollInterval: 15s
   rescueInterval: 5m
+
+redirect:
+  success: "/readyz"
+  fail: "/auth/error"
