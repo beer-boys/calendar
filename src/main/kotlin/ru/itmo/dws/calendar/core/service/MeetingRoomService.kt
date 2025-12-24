@@ -1,5 +1,7 @@
 package ru.itmo.dws.calendar.core.service
 
+import java.time.LocalDate
+import kotlin.time.Duration
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.itmo.dws.calendar.core.domain.exception.BookingNotFound
@@ -19,8 +21,6 @@ import ru.itmo.dws.calendar.core.port.input.room.MeetingRoomBookingUseCase
 import ru.itmo.dws.calendar.core.port.input.room.MeetingRoomQueryUseCase
 import ru.itmo.dws.calendar.core.port.output.room.MeetingRoomBookingProvider
 import ru.itmo.dws.calendar.core.port.output.room.MeetingRoomProvider
-import java.time.LocalDate
-import kotlin.time.Duration
 
 @Service
 class MeetingRoomService(
