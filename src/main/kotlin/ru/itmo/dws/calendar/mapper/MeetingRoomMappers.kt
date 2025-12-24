@@ -3,10 +3,7 @@
 package ru.itmo.dws.calendar.mapper
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import java.time.OffsetDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
 import ru.itmo.dws.calendar.core.domain.model.MeetingRoom
 import ru.itmo.dws.calendar.core.domain.model.MeetingRoom.MeetingRoomStatus
 import ru.itmo.dws.calendar.core.domain.model.MeetingRoomBooking
@@ -78,9 +75,6 @@ fun MeetingRoom.toEntity(objectMapper: ObjectMapper): MeetingRoomEntity {
     )
 }
 
-private fun ZonedDateTime.toDbOffsetUtc(): OffsetDateTime = this.toInstant().atOffset(ZoneOffset.UTC)
-private fun OffsetDateTime.toDomainZoned(zoneId: ZoneId): ZonedDateTime = this.toInstant().atZone(zoneId)
-
 fun MeetingRoomBookingEntity.toDomain(roomZoneId: ZoneId) = MeetingRoomBooking(
     id = MeetingRoomBookingId(id),
     roomId = MeetingRoomId(roomId),
@@ -88,8 +82,8 @@ fun MeetingRoomBookingEntity.toDomain(roomZoneId: ZoneId) = MeetingRoomBooking(
     purpose = purpose,
     status = BookingStatus.valueOf(status),
     timeSlot = TimeSlot(
-        start = startTime.toDomainZoned(roomZoneId),
-        end = endTime.toDomainZoned(roomZoneId),
+        start = startTime.atZone(roomZoneId),
+        end = endTime.atZone(roomZoneId),
     )
 )
 
@@ -99,6 +93,6 @@ fun MeetingRoomBooking.toEntity() = MeetingRoomBookingEntity(
     organizerId = organizerId.value,
     purpose = purpose,
     status = status.name,
-    startTime = timeSlot.start.toDbOffsetUtc(),
-    endTime = timeSlot.end.toDbOffsetUtc(),
+    startTime = timeSlot.start.toInstant(),
+    endTime = timeSlot.end.toInstant(),
 )

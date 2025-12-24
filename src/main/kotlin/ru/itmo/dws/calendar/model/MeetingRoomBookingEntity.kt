@@ -1,6 +1,6 @@
 package ru.itmo.dws.calendar.model
 
-import java.time.OffsetDateTime
+import java.time.Instant
 import java.util.UUID
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
@@ -18,7 +18,7 @@ data class MeetingRoomBookingEntity(
     val status: String,
 
     @Column("start_time")
-    val startTime: OffsetDateTime,
+    val startTime: Instant,
     @Column("end_time")
-    val endTime: OffsetDateTime,
+    val endTime: Instant,
 )

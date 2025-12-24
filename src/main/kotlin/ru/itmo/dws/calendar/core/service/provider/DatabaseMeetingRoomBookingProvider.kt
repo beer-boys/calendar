@@ -1,10 +1,9 @@
 package ru.itmo.dws.calendar.core.service.provider
 
-import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
+import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.data.relational.core.conversion.DbActionExecutionException
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import ru.itmo.dws.calendar.core.domain.exception.TimeSlotNotAvailable
@@ -17,6 +16,9 @@ import ru.itmo.dws.calendar.core.port.output.room.MeetingRoomProvider
 import ru.itmo.dws.calendar.mapper.toDomain
 import ru.itmo.dws.calendar.mapper.toEntity
 import ru.itmo.dws.calendar.repository.MeetingRoomBookingRepository
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
 
 @Component
 class DatabaseMeetingRoomBookingProvider(
@@ -66,9 +68,18 @@ class DatabaseMeetingRoomBookingProvider(
         try {
             repository.insert(booking.toEntity())
             return booking
+        } catch (e: DbActionExecutionException) {
+            logger.info("Failed to create booking: {}", booking, e)
+            if (isOverlapConstraintViolation(e)) {
+                throw TimeSlotNotAvailable(booking.roomId, booking.timeSlot)
+            }
+            throw e
         } catch (e: DataIntegrityViolationException) {
             logger.info("Failed to create booking: {}", booking, e)
-            throw TimeSlotNotAvailable(booking.roomId, booking.timeSlot)
+            if (isOverlapConstraintViolation(e)) {
+                throw TimeSlotNotAvailable(booking.roomId, booking.timeSlot)
+            }
+            throw e
         }
     }
 
@@ -76,5 +87,19 @@ class DatabaseMeetingRoomBookingProvider(
     override fun cancel(bookingId: MeetingRoomBookingId) {
         val existing = repository.findById(bookingId.value).orElse(null) ?: return
         repository.save(existing.copy(status = "CANCELED"))
+    }
+
+    private fun isOverlapConstraintViolation(e: Throwable): Boolean {
+        val root = rootCause(e)
+
+        if (root is PSQLException && root.sqlState == "23P01") return true
+
+        val msg = (root.message ?: "") + " " + (e.message ?: "")
+        return msg.contains("ex_bookings_no_overlap", ignoreCase = true)
+    }
+
+    private tailrec fun rootCause(t: Throwable): Throwable {
+        val cause = t.cause
+        return if (cause == null || cause === t) t else rootCause(cause)
     }
 }
