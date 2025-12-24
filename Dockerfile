@@ -10,8 +10,7 @@ RUN ./gradlew dependencies --no-daemon
 
 COPY src ./src
 
-# todo also exclude detekt
-RUN ./gradlew clean build -x test --no-daemon
+RUN ./gradlew clean build -x check --no-daemon
 
 RUN java -Djarmode=layertools -jar build/libs/*.jar extract
 
@@ -39,7 +38,7 @@ COPY --from=builder /app/snapshot-dependencies/ ./
 COPY --from=builder /app/application/ ./
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD wget -qO- http://localhost:8080/readyz | grep UP || exit 1
+  CMD wget -qO- http://localhost:8080/api/readyz | grep UP || exit 1
 
 EXPOSE 8080
 EXPOSE 8081

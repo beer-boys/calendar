@@ -10,7 +10,7 @@ import ru.itmo.dws.calendar.dto.UserInfoDto
 import ru.itmo.dws.calendar.service.UserService
 
 @RestController
-@RequestMapping("/api/v1/me")
+@RequestMapping("/v1/me")
 class MeController(
     private val userService: UserService,
 ) {

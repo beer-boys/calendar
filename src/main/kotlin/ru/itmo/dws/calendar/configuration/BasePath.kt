@@ -1,7 +1,7 @@
 package ru.itmo.dws.calendar.configuration
 
 object BasePath {
-    const val BASE = "/api/v1"
+    const val BASE = "/v1"
     const val READYZ = "/readyz"
     const val AUTH_LOGIN = "$BASE/auth/login"
     const val AUTH_REGISTER = "$BASE/auth/register"

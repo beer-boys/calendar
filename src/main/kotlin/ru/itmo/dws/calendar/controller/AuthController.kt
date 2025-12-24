@@ -2,6 +2,7 @@ package ru.itmo.dws.calendar.controller
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
@@ -22,11 +23,14 @@ import ru.itmo.dws.calendar.security.OAuth2Service
 import ru.itmo.dws.calendar.service.AuthService
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/v1/auth")
 class AuthController(
     private val authService: AuthService,
     private val oAuth2Service: OAuth2Service,
 ) {
+
+    @Value("\${server.servlet.context-path}")
+    private lateinit var contextPath: String
 
     @PostMapping("/login")
     fun login(@RequestBody request: AuthRequest): ResponseEntity<AuthResponse> {
@@ -72,6 +76,6 @@ class AuthController(
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
 
-        return ResponseEntity.ok(LinkResponse(false, BasePath.GOOGLE_OAUTH2))
+        return ResponseEntity.ok(LinkResponse(false, contextPath + BasePath.GOOGLE_OAUTH2))
     }
 }
