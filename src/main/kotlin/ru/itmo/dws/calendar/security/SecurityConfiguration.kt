@@ -1,6 +1,7 @@
 package ru.itmo.dws.calendar.security
 
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
@@ -29,9 +30,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import ru.itmo.dws.calendar.configuration.BasePath
 import ru.itmo.dws.calendar.configuration.BasePath.GOOGLE_WHITE_LIST
 import ru.itmo.dws.calendar.configuration.BasePath.WHITE_LIST
+import ru.itmo.dws.calendar.configuration.properties.RedirectProperties
 
 @Configuration
 @EnableWebSecurity
+@EnableConfigurationProperties(RedirectProperties::class)
 @Suppress("SpreadOperator", "MagicNumber", "ForbiddenComment")
 class SecurityConfiguration {
 

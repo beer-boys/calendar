@@ -9,6 +9,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import ru.itmo.dws.calendar.configuration.properties.RedirectProperties
 import ru.itmo.dws.calendar.model.UserOAuthLink
 import ru.itmo.dws.calendar.repository.UserOAuthLinkRepository
 import ru.itmo.dws.calendar.security.jwt.JwtProvider
@@ -17,6 +18,7 @@ import ru.itmo.dws.calendar.security.jwt.JwtProvider
 class UserOAuthSuccessHandler(
     private val jwtProvider: JwtProvider,
     private val linkRepository: UserOAuthLinkRepository,
+    private val redirectProperties: RedirectProperties,
 ) : AuthenticationSuccessHandler {
 
     @Transactional
@@ -57,13 +59,12 @@ class UserOAuthSuccessHandler(
                 SecurityContextHolder.clearContext()
                 request.getSession(false)?.invalidate()
 
-                // todo extract to properties
-                response.sendRedirect("/readyz")
+                response.sendRedirect(redirectProperties.success)
             } else {
-                response.sendRedirect("/auth/error?reason=not_oauth_token")
+                response.sendRedirect("${redirectProperties.fail}?reason=not_oauth_token")
             }
         } else {
-            response.sendRedirect("/auth/error?reason=jwt_invalid")
+            response.sendRedirect("${redirectProperties.fail}?reason=jwt_invalid")
         }
     }
 }
