@@ -3,6 +3,7 @@ package ru.itmo.dws.calendar.core.port.output
 import java.time.LocalDate
 import ru.itmo.dws.calendar.core.domain.model.HabitOccurrence
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
+import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 
 interface HabitOccurrenceRepository {
 
@@ -33,4 +34,10 @@ interface HabitOccurrenceRepository {
     ): Int
 
     fun delete(occurrence: HabitOccurrence): Boolean
+
+    fun findByUserIdAndDateRange(
+        userId: UserId,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): List<HabitOccurrence>
 }

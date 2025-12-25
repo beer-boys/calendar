@@ -5,11 +5,13 @@ import java.util.Optional
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import ru.itmo.dws.calendar.configuration.properties.HabitHorizonProperties
+import ru.itmo.dws.calendar.core.port.input.CalendarFeedUseCase
 import ru.itmo.dws.calendar.core.port.input.HabitManagementUseCase
 import ru.itmo.dws.calendar.core.port.output.CalendarProvider
 import ru.itmo.dws.calendar.core.port.output.FocusTimeRepository
 import ru.itmo.dws.calendar.core.port.output.HabitOccurrenceRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
+import ru.itmo.dws.calendar.core.port.output.InternalEventProvider
 import ru.itmo.dws.calendar.core.port.output.MeetingRepository
 import ru.itmo.dws.calendar.core.service.ConflictDetectionService
 import ru.itmo.dws.calendar.core.service.EventSlotFinder
@@ -17,6 +19,8 @@ import ru.itmo.dws.calendar.core.service.HabitHorizonExtensionService
 import ru.itmo.dws.calendar.core.service.HabitManagementService
 import ru.itmo.dws.calendar.core.service.HabitSchedulingService
 import ru.itmo.dws.calendar.core.service.HabitSyncService
+import ru.itmo.dws.calendar.core.service.feed.CalendarFeedService
+import ru.itmo.dws.calendar.core.service.feed.HabitOccurrenceEventProvider
 import ru.itmo.dws.calendar.core.service.provider.FocusTimeEventProvider
 import ru.itmo.dws.calendar.core.service.provider.HabitEventProvider
 import ru.itmo.dws.calendar.core.service.provider.MeetingEventProvider
@@ -125,6 +129,36 @@ class CoreConfiguration {
             eventSlotFinder = eventSlotFinder,
             horizonWeeks = habitHorizonProperties.planningWeeks,
             zoneId = ZoneId.systemDefault()
+        )
+    }
+
+    @Bean
+    fun habitOccurrenceEventProvider(
+        habitRepository: HabitRepository,
+        occurrenceRepository: HabitOccurrenceRepository
+    ): HabitOccurrenceEventProvider {
+        return HabitOccurrenceEventProvider(
+            habitRepository = habitRepository,
+            occurrenceRepository = occurrenceRepository,
+            zoneId = ZoneId.systemDefault()
+        )
+    }
+
+    @Bean
+    fun internalEventProviders(
+        habitOccurrenceEventProvider: HabitOccurrenceEventProvider
+    ): List<InternalEventProvider> {
+        return listOf(habitOccurrenceEventProvider)
+    }
+
+    @Bean
+    fun calendarFeedUseCase(
+        calendarProvider: Optional<CalendarProvider>,
+        internalEventProviders: List<InternalEventProvider>
+    ): CalendarFeedUseCase {
+        return CalendarFeedService(
+            calendarProvider = calendarProvider.orElse(null),
+            eventProviders = internalEventProviders
         )
     }
 }
