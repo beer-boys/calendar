@@ -7,6 +7,8 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -19,7 +21,6 @@ import ru.itmo.dws.calendar.core.domain.model.Habit
 import ru.itmo.dws.calendar.core.domain.model.HabitOccurrence
 import ru.itmo.dws.calendar.core.domain.model.ItemDetails
 import ru.itmo.dws.calendar.core.domain.model.OccurrenceStatus
-import ru.itmo.dws.calendar.core.domain.model.SchedulableEvent
 import ru.itmo.dws.calendar.core.domain.valueobject.CalendarId
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitFlexibilityWindow
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
@@ -35,192 +36,213 @@ class CalendarFeedServiceTest {
 
     private val zoneId = ZoneId.of("Europe/Moscow")
     private val userId = UserId(UUID.randomUUID())
-    private val today = LocalDate.now(zoneId)
+    private val today = LocalDate.now()
 
     private lateinit var habitRepository: InMemoryHabitRepository
     private lateinit var occurrenceRepository: InMemoryHabitOccurrenceRepository
-    private lateinit var habitOccurrenceEventProvider: HabitOccurrenceEventProvider
+    private lateinit var mockCalendarProvider: MockCalendarProvider
+    private lateinit var calendarFeedService: CalendarFeedService
 
     @BeforeEach
     fun setUp() {
         habitRepository = InMemoryHabitRepository()
         occurrenceRepository = InMemoryHabitOccurrenceRepository(habitRepository)
-        habitOccurrenceEventProvider = HabitOccurrenceEventProvider(
+        mockCalendarProvider = MockCalendarProvider()
+
+        val habitOccurrenceEventProvider = HabitOccurrenceEventProvider(
             habitRepository = habitRepository,
             occurrenceRepository = occurrenceRepository,
             zoneId = zoneId
         )
+
+        calendarFeedService = CalendarFeedService(
+            calendarProvider = mockCalendarProvider,
+            eventProviders = listOf(habitOccurrenceEventProvider)
+        )
     }
 
     @Nested
-    @DisplayName("Получение ленты без внешнего провайдера")
-    inner class WithoutExternalProvider {
+    @DisplayName("Базовые сценарии")
+    inner class BasicScenarios {
 
         @Test
-        @DisplayName("Возвращает пустой список если нет событий")
-        fun `returns empty list when no events`() {
-            val service = createService(calendarProvider = null)
+        @DisplayName("Пустая лента без событий")
+        fun `empty feed when no events`() {
             val timeRange = createTimeRange(today, today.plusDays(7))
 
-            val result = service.getCalendarFeed(userId, timeRange)
+            val result = calendarFeedService.getCalendarFeed(userId, timeRange)
 
             assertTrue(result.events.isEmpty())
             assertEquals(0, result.totalCount)
+            assertFalse(result.hasConflicts)
+            assertEquals(timeRange, result.period)
         }
 
         @Test
-        @DisplayName("Возвращает occurrences привычек с правильным типом")
-        fun `returns habit occurrences with correct type`() {
-            val habit = createAndSaveHabit()
+        @DisplayName("Привычки возвращаются с типом HABIT и корректными details")
+        fun `habits are returned with HABIT type and correct details`() {
+            val habit = createAndSaveHabit("Утренняя пробежка")
             val occurrence = createAndSaveOccurrence(habit, today)
-
-            val service = createService(calendarProvider = null)
             val timeRange = createTimeRange(today, today.plusDays(1))
 
-            val result = service.getCalendarFeed(userId, timeRange)
+            val result = calendarFeedService.getCalendarFeed(userId, timeRange)
 
             assertEquals(1, result.events.size)
-            val event = result.events.first()
-            assertEquals(CalendarItemType.HABIT, event.itemType)
-            assertEquals(EventSource.INTERNAL_ONLY, event.source)
-            assertEquals(habit.title, event.title)
+            val feedItem = result.events.first()
 
-            val details = event.details as ItemDetails.Habit
+            assertEquals(CalendarItemType.HABIT, feedItem.itemType)
+            assertEquals(habit.title, feedItem.title)
+            assertNotNull(feedItem.timeSlot)
+
+            val details = feedItem.details as ItemDetails.Habit
             assertEquals(habit.id, details.habitId)
             assertEquals(today, details.occurrenceDate)
+            assertEquals(OccurrenceStatus.SCHEDULED, details.occurrenceStatus)
         }
 
         @Test
-        @DisplayName("События сортируются по времени начала")
+        @DisplayName("События отсортированы по времени начала")
         fun `events are sorted by start time`() {
-            val habit = createAndSaveHabit()
-            createAndSaveOccurrence(habit, today.plusDays(1), LocalTime.of(14, 0))
-            createAndSaveOccurrence(habit, today, LocalTime.of(9, 0))
+            val habit1 = createAndSaveHabit("Поздняя привычка")
+            val habit2 = createAndSaveHabit("Ранняя привычка")
 
-            val service = createService(calendarProvider = null)
-            val timeRange = createTimeRange(today, today.plusDays(2))
+            createAndSaveOccurrence(habit1, today, LocalTime.of(14, 0))
+            createAndSaveOccurrence(habit2, today, LocalTime.of(9, 0))
 
-            val result = service.getCalendarFeed(userId, timeRange)
+            val timeRange = createTimeRange(today, today.plusDays(1))
+
+            val result = calendarFeedService.getCalendarFeed(userId, timeRange)
 
             assertEquals(2, result.events.size)
+            // Ранняя привычка должна быть первой
+            assertEquals("Ранняя привычка", result.events[0].title)
+            assertEquals("Поздняя привычка", result.events[1].title)
+
             assertTrue(result.events[0].startTime.isBefore(result.events[1].startTime))
         }
     }
 
     @Nested
-    @DisplayName("Merge внутренних и внешних событий")
+    @DisplayName("Merge событий")
     inner class MergeEvents {
 
         @Test
-        @DisplayName("Зеркалированные события не дублируются")
+        @DisplayName("Зеркалированные события не дублируются - внешнее исключается")
         fun `mirrored events are not duplicated`() {
-            val habit = createAndSaveHabit()
-            val externalEventId = "ext-event-123"
-            val occurrence = createAndSaveOccurrence(habit, today, externalEventId = externalEventId)
+            val externalEventId = "google-event-123"
 
-            val mockProvider = MockCalendarProvider(
-                listOf(
-                    createExternalEvent(externalEventId, today, LocalTime.of(10, 0))
+            val habit = createAndSaveHabit("Синхронизированная привычка")
+            createAndSaveOccurrence(habit, today, externalEventId = externalEventId)
+
+            // Добавляем такое же событие во внешний календарь
+            mockCalendarProvider.addEvent(
+                createExternalEvent(
+                    externalId = externalEventId,
+                    title = "Синхронизированная привычка",
+                    startTime = LocalTime.of(10, 0)
                 )
             )
 
-            val service = createService(calendarProvider = mockProvider)
             val timeRange = createTimeRange(today, today.plusDays(1))
 
-            val result = service.getCalendarFeed(userId, timeRange)
+            val result = calendarFeedService.getCalendarFeed(userId, timeRange)
 
+            // Должно быть только одно событие - внутреннее (зеркалированное)
             assertEquals(1, result.events.size)
-            val event = result.events.first()
-            assertEquals(CalendarItemType.HABIT, event.itemType)
-            assertEquals(EventSource.MIRRORED, event.source)
-            assertEquals(externalEventId, event.externalEventId)
+            assertEquals(CalendarItemType.HABIT, result.events[0].itemType)
+            assertEquals(EventSource.MIRRORED, result.events[0].source)
+            assertEquals(externalEventId, result.events[0].externalEventId)
         }
 
         @Test
-        @DisplayName("Внешние события без связи с внутренними отображаются как EXTERNAL")
-        fun `external events without internal link are shown as EXTERNAL`() {
-            val externalEventId = "pure-external-event"
-            val mockProvider = MockCalendarProvider(
-                listOf(
-                    createExternalEvent(externalEventId, today, LocalTime.of(10, 0))
+        @DisplayName("Внешние события без связи показываются как EXTERNAL")
+        fun `external events without link shown as EXTERNAL`() {
+            mockCalendarProvider.addEvent(
+                createExternalEvent(
+                    externalId = "external-meeting-456",
+                    title = "Внешняя встреча",
+                    startTime = LocalTime.of(15, 0)
                 )
             )
 
-            val service = createService(calendarProvider = mockProvider)
             val timeRange = createTimeRange(today, today.plusDays(1))
 
-            val result = service.getCalendarFeed(userId, timeRange)
+            val result = calendarFeedService.getCalendarFeed(userId, timeRange)
 
             assertEquals(1, result.events.size)
-            val event = result.events.first()
-            assertEquals(CalendarItemType.EXTERNAL, event.itemType)
-            assertEquals(EventSource.EXTERNAL_ONLY, event.source)
-            assertEquals(externalEventId, event.externalEventId)
+            val feedItem = result.events.first()
+
+            assertEquals(CalendarItemType.EXTERNAL, feedItem.itemType)
+            assertEquals(EventSource.EXTERNAL_ONLY, feedItem.source)
+            assertEquals("Внешняя встреча", feedItem.title)
+
+            // Capabilities для внешних событий - только чтение
+            assertFalse(feedItem.capabilities.canDelete)
+            assertFalse(feedItem.capabilities.canReschedule)
+            assertFalse(feedItem.capabilities.canEdit)
         }
     }
 
     @Nested
-    @DisplayName("Обнаружение конфликтов")
-    inner class ConflictDetection {
+    @DisplayName("Конфликты")
+    inner class Conflicts {
 
         @Test
         @DisplayName("Пересекающиеся события помечаются как конфликтные")
         fun `overlapping events are marked as conflicting`() {
-            val habit = createAndSaveHabit()
-            val occurrence1 = createAndSaveOccurrence(habit, today, LocalTime.of(10, 0))
-            val occurrence2 = createAndSaveOccurrence(habit, today.plusDays(1), LocalTime.of(10, 30))
+            val habit1 = createAndSaveHabit("Привычка 1")
+            val habit2 = createAndSaveHabit("Привычка 2")
 
-            val mockProvider = MockCalendarProvider(
-                listOf(
-                    createExternalEvent("ext-1", today, LocalTime.of(10, 30), Duration.ofMinutes(30))
-                )
-            )
+            // Создаём пересекающиеся события: 10:00-11:00 и 10:30-11:30
+            createAndSaveOccurrence(habit1, today, LocalTime.of(10, 0), LocalTime.of(11, 0))
+            createAndSaveOccurrence(habit2, today, LocalTime.of(10, 30), LocalTime.of(11, 30))
 
-            val service = createService(calendarProvider = mockProvider)
-            val timeRange = createTimeRange(today, today.plusDays(2))
+            val timeRange = createTimeRange(today, today.plusDays(1))
 
-            val result = service.getCalendarFeed(userId, timeRange)
+            val result = calendarFeedService.getCalendarFeed(userId, timeRange)
 
+            assertEquals(2, result.events.size)
             assertTrue(result.hasConflicts)
-            val conflictingEvents = result.events.filter { it.conflict != null }
-            assertTrue(conflictingEvents.isNotEmpty())
+
+            // Оба события должны иметь conflict info
+            assertTrue(result.events.all { it.conflict != null })
+
+            val conflict1 = result.events[0].conflict!!
+            val conflict2 = result.events[1].conflict!!
+
+            assertTrue(conflict1.conflictingEventIds.isNotEmpty())
+            assertTrue(conflict2.conflictingEventIds.isNotEmpty())
         }
 
         @Test
-        @DisplayName("Непересекающиеся события не имеют конфликтов")
+        @DisplayName("Непересекающиеся события без конфликтов")
         fun `non-overlapping events have no conflicts`() {
-            val habit = createAndSaveHabit()
-            createAndSaveOccurrence(habit, today, LocalTime.of(9, 0))
-            createAndSaveOccurrence(habit, today.plusDays(1), LocalTime.of(14, 0))
+            val habit1 = createAndSaveHabit("Утренняя привычка")
+            val habit2 = createAndSaveHabit("Вечерняя привычка")
 
-            val service = createService(calendarProvider = null)
-            val timeRange = createTimeRange(today, today.plusDays(2))
+            // Не пересекаются: 9:00-10:00 и 18:00-19:00
+            createAndSaveOccurrence(habit1, today, LocalTime.of(9, 0), LocalTime.of(10, 0))
+            createAndSaveOccurrence(habit2, today, LocalTime.of(18, 0), LocalTime.of(19, 0))
 
-            val result = service.getCalendarFeed(userId, timeRange)
+            val timeRange = createTimeRange(today, today.plusDays(1))
 
+            val result = calendarFeedService.getCalendarFeed(userId, timeRange)
+
+            assertEquals(2, result.events.size)
+            assertFalse(result.hasConflicts)
+
+            // Оба события без конфликтов
             assertTrue(result.events.all { it.conflict == null })
         }
     }
 
-    private fun createService(calendarProvider: CalendarProvider?): CalendarFeedService {
-        return CalendarFeedService(
-            calendarProvider = calendarProvider,
-            eventProviders = listOf(habitOccurrenceEventProvider)
-        )
-    }
+    // ===== Helper methods =====
 
-    private fun createTimeRange(start: LocalDate, end: LocalDate): TimeSlot {
-        return TimeSlot(
-            start = ZonedDateTime.of(start, LocalTime.MIN, zoneId),
-            end = ZonedDateTime.of(end, LocalTime.MAX, zoneId)
-        )
-    }
-
-    private fun createAndSaveHabit(): Habit {
+    private fun createAndSaveHabit(title: String): Habit {
         val habit = Habit(
             id = HabitId.generate(),
             userId = userId,
-            title = "Test Habit",
+            title = title,
             duration = Duration.ofHours(1),
             recurrenceRule = RecurrenceRule.daily(today),
             flexibilityWindow = HabitFlexibilityWindow.workingHours()
@@ -233,6 +255,7 @@ class CalendarFeedServiceTest {
         habit: Habit,
         date: LocalDate,
         startTime: LocalTime = LocalTime.of(10, 0),
+        endTime: LocalTime = startTime.plusHours(1),
         externalEventId: String? = null
     ): HabitOccurrence {
         val occurrence = HabitOccurrence(
@@ -241,7 +264,7 @@ class CalendarFeedServiceTest {
             status = OccurrenceStatus.SCHEDULED,
             timeSlot = TimeSlot(
                 start = ZonedDateTime.of(date, startTime, zoneId),
-                end = ZonedDateTime.of(date, startTime.plusHours(1), zoneId)
+                end = ZonedDateTime.of(date, endTime, zoneId)
             ),
             externalEventId = externalEventId
         )
@@ -249,35 +272,66 @@ class CalendarFeedServiceTest {
         return occurrence
     }
 
-    private fun createExternalEvent(
-        id: String,
-        date: LocalDate,
-        startTime: LocalTime,
-        duration: Duration = Duration.ofHours(1)
-    ): CalendarEvent {
-        return CalendarEvent(
-            externalId = id,
-            calendarId = CalendarId("primary"),
-            owner = userId,
-            timeSlot = TimeSlot(
-                start = ZonedDateTime.of(date, startTime, zoneId),
-                end = ZonedDateTime.of(date, startTime.plus(duration), zoneId)
-            ),
-            title = "External Event",
-            description = null,
-            participants = emptyList()
+    private fun createTimeRange(startDate: LocalDate, endDate: LocalDate): TimeSlot {
+        return TimeSlot(
+            start = ZonedDateTime.of(startDate, LocalTime.MIN, zoneId),
+            end = ZonedDateTime.of(endDate, LocalTime.MAX, zoneId)
         )
     }
 
-    private class MockCalendarProvider(
-        private val events: List<CalendarEvent>
-    ) : CalendarProvider {
-        override fun getEvents(userId: UserId, timeRange: TimeSlot): List<CalendarEvent> = events
-        override fun getEventsForUsers(userIds: List<UserId>, timeRange: TimeSlot) =
-            emptyMap<UserId, List<CalendarEvent>>()
+    private fun createExternalEvent(
+        externalId: String,
+        title: String,
+        startTime: LocalTime
+    ): CalendarEvent {
+        return CalendarEvent(
+            externalId = externalId,
+            calendarId = CalendarId("primary"),
+            owner = userId,
+            timeSlot = TimeSlot(
+                start = ZonedDateTime.of(today, startTime, zoneId),
+                end = ZonedDateTime.of(today, startTime.plusHours(1), zoneId)
+            ),
+            title = title,
+            description = null,
+            participants = emptyList(),
+            eventType = CalendarEvent.EventType.REGULAR,
+            isAllDay = false
+        )
+    }
 
-        override fun createEvent(userId: UserId, event: SchedulableEvent) = ""
-        override fun updateEvent(userId: UserId, externalEventId: String, event: SchedulableEvent) = false
-        override fun deleteEvent(userId: UserId, externalEventId: String) = false
+    /**
+     * Mock CalendarProvider для тестирования
+     */
+    private class MockCalendarProvider : CalendarProvider {
+        private val events = mutableListOf<CalendarEvent>()
+
+        fun addEvent(event: CalendarEvent) {
+            events.add(event)
+        }
+
+        override fun getEvents(userId: UserId, timeRange: TimeSlot): List<CalendarEvent> {
+            return events.filter { it.owner == userId }
+        }
+
+        override fun getEventsForUsers(
+            userIds: List<UserId>,
+            timeRange: TimeSlot
+        ): Map<UserId, List<CalendarEvent>> {
+            return userIds.associateWith { userId -> events.filter { it.owner == userId } }
+        }
+
+        override fun createEvent(
+            userId: UserId,
+            event: ru.itmo.dws.calendar.core.domain.model.SchedulableEvent
+        ): String = "mock-event-id"
+
+        override fun updateEvent(
+            userId: UserId,
+            externalEventId: String,
+            event: ru.itmo.dws.calendar.core.domain.model.SchedulableEvent
+        ): Boolean = true
+
+        override fun deleteEvent(userId: UserId, externalEventId: String): Boolean = true
     }
 }
