@@ -157,7 +157,7 @@ class HabitSyncService(
             )
 
             occurrenceRepository.save(occurrence)
-        } catch (e: ExternalEventNotFoundException) {
+        } catch (@Suppress("SwallowedException") e: ExternalEventNotFoundException) {
             log.warn(
                 "External event {} for habit {} on {} was deleted externally, removing occurrence",
                 occurrence.externalEventId,

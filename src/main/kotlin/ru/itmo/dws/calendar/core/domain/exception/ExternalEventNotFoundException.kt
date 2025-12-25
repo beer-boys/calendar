@@ -4,4 +4,3 @@ class ExternalEventNotFoundException(
     val externalEventId: String,
     message: String = "External event not found: $externalEventId"
 ) : CalendarDomainException(message)
-
