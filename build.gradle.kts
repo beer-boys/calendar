@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.spring.starter.actuator)
     implementation(libs.spring.starter.email)
 
+    implementation(libs.springdoc.openapi.starter)
+
     implementation(libs.fasterxml.jackson.kotlin)
     implementation(libs.kotlin.reflect)
 

@@ -4,6 +4,7 @@ import java.time.ZoneId
 import java.util.Optional
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import ru.itmo.dws.calendar.configuration.properties.HabitHorizonProperties
 import ru.itmo.dws.calendar.core.port.input.HabitManagementUseCase
 import ru.itmo.dws.calendar.core.port.output.CalendarProvider
 import ru.itmo.dws.calendar.core.port.output.FocusTimeRepository
@@ -12,6 +13,7 @@ import ru.itmo.dws.calendar.core.port.output.HabitRepository
 import ru.itmo.dws.calendar.core.port.output.MeetingRepository
 import ru.itmo.dws.calendar.core.service.ConflictDetectionService
 import ru.itmo.dws.calendar.core.service.EventSlotFinder
+import ru.itmo.dws.calendar.core.service.HabitHorizonExtensionService
 import ru.itmo.dws.calendar.core.service.HabitManagementService
 import ru.itmo.dws.calendar.core.service.HabitSchedulingService
 import ru.itmo.dws.calendar.core.service.HabitSyncService
@@ -92,8 +94,7 @@ class CoreConfiguration {
         eventSlotFinder: EventSlotFinder,
         conflictDetectionService: ConflictDetectionService,
         habitSchedulingService: HabitSchedulingService,
-        habitSyncService: HabitSyncService,
-        calendarProvider: Optional<CalendarProvider>
+        habitSyncService: HabitSyncService
     ): HabitManagementUseCase {
         return HabitManagementService(
             habitRepository = habitRepository,
@@ -103,7 +104,26 @@ class CoreConfiguration {
             conflictDetectionService = conflictDetectionService,
             habitSchedulingService = habitSchedulingService,
             habitSyncService = habitSyncService,
-            calendarProvider = calendarProvider.orElse(null),
+            zoneId = ZoneId.systemDefault()
+        )
+    }
+
+    @Bean
+    fun habitHorizonExtensionService(
+        habitRepository: HabitRepository,
+        occurrenceRepository: HabitOccurrenceRepository,
+        habitSyncService: HabitSyncService,
+        eventProviders: List<SchedulableEventProvider>,
+        eventSlotFinder: EventSlotFinder,
+        habitHorizonProperties: HabitHorizonProperties
+    ): HabitHorizonExtensionService {
+        return HabitHorizonExtensionService(
+            habitRepository = habitRepository,
+            occurrenceRepository = occurrenceRepository,
+            habitSyncService = habitSyncService,
+            eventProviders = eventProviders,
+            eventSlotFinder = eventSlotFinder,
+            horizonWeeks = habitHorizonProperties.planningWeeks,
             zoneId = ZoneId.systemDefault()
         )
     }

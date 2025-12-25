@@ -8,11 +8,13 @@ import java.time.ZonedDateTime
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import ru.itmo.dws.calendar.core.domain.exception.ExternalEventNotFoundException
 import ru.itmo.dws.calendar.core.domain.model.Habit
 import ru.itmo.dws.calendar.core.domain.model.HabitOccurrence
 import ru.itmo.dws.calendar.core.domain.model.OccurrenceEvent
@@ -159,6 +161,65 @@ class HabitSyncServiceTest {
     }
 
     @Nested
+    @DisplayName("Обработка удалённых внешних событий")
+    inner class ExternalEventDeletionHandling {
+
+        @Test
+        @DisplayName("При обновлении удалённого внешнего события occurrence удаляется из системы")
+        fun `when updating deleted external event occurrence is removed from system`() {
+            val mockCalendarProvider = ExternalEventDeletedCalendarProvider()
+            val habitSyncService = HabitSyncService(
+                occurrenceRepository = occurrenceRepository,
+                calendarProvider = mockCalendarProvider
+            )
+            val habit = createHabit()
+
+            val syncedOccurrence = createScheduledOccurrence(habit.id, today)
+                .copy(externalEventId = "deleted-external-event-id")
+
+            occurrenceRepository.save(syncedOccurrence)
+
+            val result = habitSyncService.syncSingleOccurrence(habit, syncedOccurrence)
+
+            assertNull(result)
+
+            val occurrenceInRepo = occurrenceRepository.findByHabitIdAndDate(habit.id, today)
+            assertNull(occurrenceInRepo)
+        }
+
+        @Test
+        @DisplayName("SyncResult содержит deletedCount при обнаружении удалённых внешних событий")
+        fun `sync result contains deleted count when external events are deleted`() {
+            val mockCalendarProvider = ExternalEventDeletedCalendarProvider()
+            val habitSyncService = HabitSyncService(
+                occurrenceRepository = occurrenceRepository,
+                calendarProvider = mockCalendarProvider
+            )
+            val habit = createHabit()
+
+            val syncedOccurrence1 = createScheduledOccurrence(habit.id, today)
+                .copy(externalEventId = "deleted-event-1")
+            val syncedOccurrence2 = createScheduledOccurrence(habit.id, today.plusDays(1))
+                .copy(externalEventId = "deleted-event-2")
+            val newOccurrence = createScheduledOccurrence(habit.id, today.plusDays(2))
+
+            occurrenceRepository.save(syncedOccurrence1)
+            occurrenceRepository.save(syncedOccurrence2)
+
+            val result = habitSyncService.syncOccurrencesToExternalCalendar(
+                habit,
+                listOf(syncedOccurrence1, syncedOccurrence2, newOccurrence)
+            )
+
+            assertEquals(2, result.deletedCount)
+            assertEquals(1, result.syncedCount)
+            assertEquals(0, result.failedCount)
+
+            assertEquals(1, result.occurrences.size)
+        }
+    }
+
+    @Nested
     @DisplayName("OccurrenceEvent - метаданные события")
     inner class OccurrenceEventMetadata {
 
@@ -262,13 +323,30 @@ class HabitSyncServiceTest {
             userIds: List<UserId>,
             timeRange: TimeSlot
         ): Map<UserId, List<ru.itmo.dws.calendar.core.domain.model.CalendarEvent>> = emptyMap()
+    }
 
-        override fun createRecurringEvent(userId: UserId, habit: Habit): String {
-            return "recurring-event-${UUID.randomUUID()}"
+    private class ExternalEventDeletedCalendarProvider : CalendarProvider {
+
+        override fun createEvent(userId: UserId, event: SchedulableEvent): String {
+            return "new-external-event-${UUID.randomUUID()}"
         }
 
-        override fun updateRecurringEvent(userId: UserId, externalEventId: String, habit: Habit): Boolean {
+        override fun updateEvent(userId: UserId, externalEventId: String, event: SchedulableEvent): Boolean {
+            throw ExternalEventNotFoundException(externalEventId)
+        }
+
+        override fun deleteEvent(userId: UserId, externalEventId: String): Boolean {
             return true
         }
+
+        override fun getEvents(
+            userId: UserId,
+            timeRange: TimeSlot
+        ): List<ru.itmo.dws.calendar.core.domain.model.CalendarEvent> = emptyList()
+
+        override fun getEventsForUsers(
+            userIds: List<UserId>,
+            timeRange: TimeSlot
+        ): Map<UserId, List<ru.itmo.dws.calendar.core.domain.model.CalendarEvent>> = emptyMap()
     }
 }

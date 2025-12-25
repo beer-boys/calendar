@@ -1,6 +1,7 @@
 package ru.itmo.dws.calendar.core.service
 
 import org.slf4j.LoggerFactory
+import ru.itmo.dws.calendar.core.domain.exception.ExternalEventNotFoundException
 import ru.itmo.dws.calendar.core.domain.model.Habit
 import ru.itmo.dws.calendar.core.domain.model.HabitOccurrence
 import ru.itmo.dws.calendar.core.domain.model.OccurrenceEvent
@@ -33,16 +34,20 @@ class HabitSyncService(
 
         var syncedCount = 0
         var failedCount = 0
+        var deletedCount = 0
         val syncedOccurrences = mutableListOf<HabitOccurrence>()
 
         for (occurrence in scheduledOccurrences) {
             val syncedOccurrence = syncSingleOccurrence(habit, occurrence)
-            if (syncedOccurrence.isSynced) {
+            if (syncedOccurrence == null) {
+                deletedCount++
+            } else if (syncedOccurrence.isSynced) {
                 syncedCount++
+                syncedOccurrences.add(syncedOccurrence)
             } else {
                 failedCount++
+                syncedOccurrences.add(syncedOccurrence)
             }
-            syncedOccurrences.add(syncedOccurrence)
         }
 
         val allOccurrences = syncedOccurrences + savedUnscheduled
@@ -51,11 +56,12 @@ class HabitSyncService(
             syncedCount = syncedCount,
             failedCount = failedCount,
             skippedCount = savedUnscheduled.size,
+            deletedCount = deletedCount,
             occurrences = allOccurrences
         )
     }
 
-    fun syncSingleOccurrence(habit: Habit, occurrence: HabitOccurrence): HabitOccurrence {
+    fun syncSingleOccurrence(habit: Habit, occurrence: HabitOccurrence): HabitOccurrence? {
         if (calendarProvider == null || !occurrence.isScheduled || occurrence.timeSlot == null) {
             return occurrenceRepository.save(occurrence)
         }
@@ -134,7 +140,7 @@ class HabitSyncService(
         }
     }
 
-    private fun updateExternalEvent(habit: Habit, occurrence: HabitOccurrence): HabitOccurrence {
+    private fun updateExternalEvent(habit: Habit, occurrence: HabitOccurrence): HabitOccurrence? {
         return try {
             val occurrenceEvent = OccurrenceEvent(habit, occurrence)
             calendarProvider!!.updateEvent(
@@ -151,6 +157,15 @@ class HabitSyncService(
             )
 
             occurrenceRepository.save(occurrence)
+        } catch (@Suppress("SwallowedException") e: ExternalEventNotFoundException) {
+            log.warn(
+                "External event {} for habit {} on {} was deleted externally, removing occurrence",
+                occurrence.externalEventId,
+                habit.id,
+                occurrence.date
+            )
+            occurrenceRepository.delete(occurrence)
+            null
         } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
             log.warn(
                 "Failed to update external event for habit {} on {}: {}",
@@ -171,8 +186,9 @@ data class SyncResult(
     val syncedCount: Int,
     val failedCount: Int,
     val skippedCount: Int,
+    val deletedCount: Int = 0,
     val occurrences: List<HabitOccurrence>
 ) {
-    val totalCount: Int get() = syncedCount + failedCount + skippedCount
+    val totalCount: Int get() = syncedCount + failedCount + skippedCount + deletedCount
     val isFullySuccessful: Boolean get() = failedCount == 0
 }

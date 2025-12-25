@@ -18,6 +18,11 @@ object BasePath {
         AUTH_REFRESH,
         READYZ,
         "$BASE/me",
+
+        "/swagger-ui.html",
+        "/swagger-ui/**",
+        "/v3/api-docs/**",
+        "/v3/api-docs.yaml",
     )
     val GOOGLE_WHITE_LIST = listOf(
         "$GOOGLE_BASE/**",

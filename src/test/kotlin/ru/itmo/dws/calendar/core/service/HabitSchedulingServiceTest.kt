@@ -36,7 +36,7 @@ class HabitSchedulingServiceTest {
 
     private val zoneId = ZoneId.of("Europe/Moscow")
     private val userId = UserId(UUID.randomUUID())
-    private val today = LocalDate.now()
+    private val today = LocalDate.now(zoneId)
 
     private lateinit var habitRepository: InMemoryHabitRepository
     private lateinit var meetingRepository: InMemoryMeetingRepository

@@ -1,7 +1,6 @@
 package ru.itmo.dws.calendar.core.service
 
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZoneId
 import org.slf4j.LoggerFactory
 import ru.itmo.dws.calendar.core.domain.model.CreateHabitRequest
@@ -19,7 +18,6 @@ import ru.itmo.dws.calendar.core.port.input.HabitCreationResult
 import ru.itmo.dws.calendar.core.port.input.HabitCreationStatus
 import ru.itmo.dws.calendar.core.port.input.HabitManagementUseCase
 import ru.itmo.dws.calendar.core.port.input.HabitSyncResult
-import ru.itmo.dws.calendar.core.port.output.CalendarProvider
 import ru.itmo.dws.calendar.core.port.output.HabitOccurrenceRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
 import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
@@ -33,34 +31,36 @@ class HabitManagementService(
     private val conflictDetectionService: ConflictDetectionService,
     private val habitSchedulingService: HabitSchedulingService,
     private val habitSyncService: HabitSyncService,
-    private val calendarProvider: CalendarProvider? = null,
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) : HabitManagementUseCase {
 
     private val log = LoggerFactory.getLogger(HabitManagementService::class.java)
 
+    companion object {
+        const val DEFAULT_PLANNING_WEEKS = 4
+    }
+
     override fun createHabit(request: CreateHabitRequest): HabitCreationResult {
         val habit = request.toHabit()
         val today = LocalDate.now(zoneId)
 
-        val scheduledSlot = if (habit.shouldOccurOn(today)) {
-            findSlotForDate(habit, today, request.preferredStartTime)
-        } else {
-            null
-        }
+        habitRepository.saveHabit(habit)
 
-        val habitWithSlot = if (scheduledSlot != null) {
-            habit.copy(currentTimeSlot = scheduledSlot)
-        } else {
-            habit
-        }
+        val plan = habitSchedulingService.planSchedule(habit, DEFAULT_PLANNING_WEEKS)
+        val syncResult = habitSyncService.syncOccurrencesToExternalCalendar(habit, plan.occurrences)
 
-        val habitWithExternalId = syncToExternalCalendar(habitWithSlot)
+        log.info(
+            "Created habit {} with {} occurrences ({} synced to external calendar)",
+            habit.id,
+            plan.totalCount,
+            syncResult.syncedCount
+        )
 
-        habitRepository.saveHabit(habitWithExternalId)
+        val todayOccurrence = plan.occurrences.find { it.date == today }
+        val scheduledSlot = todayOccurrence?.timeSlot
 
         val conflicts = if (scheduledSlot != null) {
-            detectConflictsForHabit(habitWithExternalId, today)
+            detectConflictsForHabit(habit, today)
         } else {
             emptyList()
         }
@@ -72,7 +72,7 @@ class HabitManagementService(
         }
 
         return HabitCreationResult(
-            habit = habitWithExternalId,
+            habit = habit,
             scheduledSlot = scheduledSlot,
             conflicts = conflicts,
             status = status
@@ -97,8 +97,9 @@ class HabitManagementService(
 
         val updatedHabit = request.applyTo(existingHabit)
 
-        syncUpdateToExternalCalendar(updatedHabit)
         habitRepository.updateHabit(habitId, updatedHabit)
+
+        syncExistingOccurrencesToExternalCalendar(updatedHabit)
 
         return updatedHabit
     }
@@ -107,7 +108,7 @@ class HabitManagementService(
         val habit = habitRepository.findHabit(habitId)
         if (habit != null) {
             habitSyncService.deleteAllOccurrencesFromExternalCalendar(habit)
-            deleteFromExternalCalendar(habit)
+            log.info("Deleted all occurrences for habit {}", habitId)
         }
         habitRepository.deleteHabit(habitId)
     }
@@ -180,84 +181,26 @@ class HabitManagementService(
         return occurrenceRepository.findByHabitIdAndDateRange(habitId, startDate, endDate)
     }
 
-    private fun findSlotForDate(
-        habit: Habit,
-        date: LocalDate,
-        preferredStartTime: LocalTime?
-    ): TimeSlot? {
-        val occupiedSlots = collectOccupiedSlotsForUser(habit.userId, date, habit.id.toString())
-
-        return eventSlotFinder.findOptimalSlot(
-            event = habit,
-            date = date,
-            baseTimeWindow = habit.flexibilityTimeRange(),
-            eventDuration = habit.duration,
-            occupiedSlots = occupiedSlots,
-            bufferTime = habit.bufferTime,
-            preferredStartTime = preferredStartTime,
-            zoneId = zoneId
-        )
-    }
-
-    private fun collectOccupiedSlotsForUser(
-        userId: UserId,
-        date: LocalDate,
-        excludeEventId: String? = null
-    ): List<TimeSlot> {
-        val allEvents = eventProviders.flatMap { provider ->
-            provider.getEventsForUserOnDate(userId, date)
-        }
-        return eventSlotFinder.collectOccupiedSlots(allEvents, excludeEventId)
-    }
-
     private fun detectConflictsForHabit(habit: Habit, date: LocalDate): List<HabitConflict> {
         return conflictDetectionService.detectAllConflictsForUser(habit.userId, date)
             .filter { it.sourceEvent.eventType == EventType.HABIT && it.sourceEvent.eventId == habit.id.toString() }
             .mapNotNull { it.toHabitConflict() }
     }
 
-    @Suppress("TooGenericExceptionCaught")
-    private fun syncToExternalCalendar(habit: Habit): Habit {
-        if (calendarProvider == null) {
-            log.debug("No calendar provider configured, skipping external sync for habit {}", habit.id)
-            return habit
-        }
+    private fun syncExistingOccurrencesToExternalCalendar(habit: Habit) {
+        val existingOccurrences = occurrenceRepository.findByHabitId(habit.id)
+            .filter { it.isSynced }
 
-        return try {
-            val externalEventId = calendarProvider.createRecurringEvent(habit.userId, habit)
-            log.info("Created recurring event in external calendar: {} for habit {}", externalEventId, habit.id)
-            habit.withExternalEventId(externalEventId)
-        } catch (e: RuntimeException) {
-            log.warn("Failed to sync habit {} to external calendar: {}", habit.id, e.message)
-            habit
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    private fun syncUpdateToExternalCalendar(habit: Habit) {
-        if (calendarProvider == null || habit.externalEventId == null) {
+        if (existingOccurrences.isEmpty()) {
             return
         }
 
-        try {
-            calendarProvider.updateRecurringEvent(habit.userId, habit.externalEventId, habit)
-            log.info("Updated recurring event in external calendar: {} for habit {}", habit.externalEventId, habit.id)
-        } catch (e: RuntimeException) {
-            log.warn("Failed to update habit {} in external calendar: {}", habit.id, e.message)
-        }
-    }
+        val syncResult = habitSyncService.syncOccurrencesToExternalCalendar(habit, existingOccurrences)
 
-    @Suppress("TooGenericExceptionCaught")
-    private fun deleteFromExternalCalendar(habit: Habit) {
-        if (calendarProvider == null || habit.externalEventId == null) {
-            return
-        }
-
-        try {
-            calendarProvider.deleteEvent(habit.userId, habit.externalEventId)
-            log.info("Deleted event from external calendar: {} for habit {}", habit.externalEventId, habit.id)
-        } catch (e: RuntimeException) {
-            log.warn("Failed to delete habit {} from external calendar: {}", habit.id, e.message)
-        }
+        log.info(
+            "Updated {} occurrences for habit {} in external calendar",
+            syncResult.syncedCount,
+            habit.id
+        )
     }
 }

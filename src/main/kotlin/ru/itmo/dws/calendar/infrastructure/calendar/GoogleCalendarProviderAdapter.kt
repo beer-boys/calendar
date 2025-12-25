@@ -11,11 +11,9 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import ru.itmo.dws.calendar.core.domain.exception.ExternalCalendarSyncException
 import ru.itmo.dws.calendar.core.domain.model.CalendarEvent
-import ru.itmo.dws.calendar.core.domain.model.Habit
 import ru.itmo.dws.calendar.core.domain.model.OccurrenceEvent
 import ru.itmo.dws.calendar.core.domain.model.SchedulableEvent
 import ru.itmo.dws.calendar.core.domain.valueobject.CalendarId
-import ru.itmo.dws.calendar.core.domain.valueobject.RecurrenceRuleConverter
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 import ru.itmo.dws.calendar.core.port.output.CalendarProvider
@@ -65,17 +63,6 @@ class GoogleCalendarProviderAdapter(
         return createdEvent.id
     }
 
-    override fun createRecurringEvent(userId: UserId, habit: Habit): String {
-        val username = requireCurrentUsername()
-        val request = toRecurringEventRequest(habit)
-
-        val createdEvent = googleCalendarProvider.createEvent(username, PRIMARY_CALENDAR, request)
-            ?: throw ExternalCalendarSyncException("Failed to create recurring event in external calendar")
-
-        log.info("Created recurring event {} in external calendar for user {}", createdEvent.id, userId)
-        return createdEvent.id
-    }
-
     override fun updateEvent(userId: UserId, externalEventId: String, event: SchedulableEvent): Boolean {
         val username = requireCurrentUsername()
         val request = toCreateEventRequest(event)
@@ -87,21 +74,6 @@ class GoogleCalendarProviderAdapter(
             true
         } else {
             log.warn("Failed to update event {} in external calendar", externalEventId)
-            false
-        }
-    }
-
-    override fun updateRecurringEvent(userId: UserId, externalEventId: String, habit: Habit): Boolean {
-        val username = requireCurrentUsername()
-        val request = toRecurringEventRequest(habit)
-
-        val updatedEvent = googleCalendarProvider.patchEvent(username, PRIMARY_CALENDAR, externalEventId, request)
-
-        return if (updatedEvent != null) {
-            log.info("Updated recurring event {} in external calendar for user {}", externalEventId, userId)
-            true
-        } else {
-            log.warn("Failed to update recurring event {} in external calendar", externalEventId)
             false
         }
     }
@@ -154,46 +126,6 @@ class GoogleCalendarProviderAdapter(
         )
     }
 
-    private fun toRecurringEventRequest(habit: Habit): CreateEventRequest {
-        val timeSlot = habit.currentTimeSlot ?: habit.flexibilityWindow.let { window ->
-            val today = java.time.LocalDate.now()
-            val start = today.atTime(window.earliestTime).atZone(ZoneId.systemDefault())
-            val end = start.plus(habit.duration)
-            TimeSlot(start, end)
-        }
-
-        val rrule = RecurrenceRuleConverter.toRRule(habit.recurrenceRule)
-        val description = buildHabitDescription(habit)
-
-        return CreateEventRequest(
-            start = toEventDateTime(timeSlot.start),
-            end = toEventDateTime(timeSlot.end),
-            summary = habit.title,
-            description = description,
-            eventType = SMART_CALENDAR_EVENT_TYPE,
-            recurrence = listOf(rrule),
-            anyoneCanAddSelf = null,
-            attachments = null,
-            attendees = null,
-            birthdayProperties = null,
-            colorId = null,
-            gadget = null,
-            guestsCanInviteOthers = null,
-            guestsCanModify = null,
-            guestsCanSeeOtherGuests = null,
-            id = null,
-            location = null,
-            originationStartTime = null,
-            reminders = null,
-            sequence = null,
-            source = null,
-            status = null,
-            transparency = null,
-            visibility = null,
-            workingLocationProperties = null
-        )
-    }
-
     private fun toEventDateTime(zonedDateTime: java.time.ZonedDateTime): EventDateTime {
         val googleDateTime = DateTime(zonedDateTime.toInstant().toEpochMilli())
         return EventDateTime(
@@ -227,18 +159,6 @@ class GoogleCalendarProviderAdapter(
             |source: $SOURCE_APP
             """.trimMargin()
         }
-    }
-
-    private fun buildHabitDescription(habit: Habit): String {
-        val baseDescription = habit.description ?: ""
-        return """
-            |$baseDescription
-            |
-            |---
-            |[SmartCalendar Metadata]
-            |habitId: ${habit.id.value}
-            |source: $SOURCE_APP
-        """.trimMargin()
     }
 
     private fun parseEventsFromJson(json: String, userId: UserId): List<CalendarEvent> {
