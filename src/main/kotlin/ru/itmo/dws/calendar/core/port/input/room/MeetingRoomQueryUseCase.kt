@@ -1,7 +1,7 @@
 package ru.itmo.dws.calendar.core.port.input.room
 
+import java.time.Duration
 import java.time.LocalDate
-import kotlin.time.Duration
 import ru.itmo.dws.calendar.core.domain.model.MeetingRoom
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomId

@@ -1,7 +1,10 @@
 package ru.itmo.dws.calendar.core.service
 
+import java.time.Duration
 import java.time.LocalDate
-import kotlin.time.Duration
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.itmo.dws.calendar.core.domain.exception.BookingNotFound
@@ -21,11 +24,17 @@ import ru.itmo.dws.calendar.core.port.input.room.MeetingRoomBookingUseCase
 import ru.itmo.dws.calendar.core.port.input.room.MeetingRoomQueryUseCase
 import ru.itmo.dws.calendar.core.port.output.room.MeetingRoomBookingProvider
 import ru.itmo.dws.calendar.core.port.output.room.MeetingRoomProvider
+import ru.itmo.dws.calendar.core.service.utils.TimeSlotUtils.clipToWindow
+import ru.itmo.dws.calendar.core.service.utils.TimeSlotUtils.mergeOverlappingOrAdjacent
+import ru.itmo.dws.calendar.core.service.utils.TimeSlotUtils.sliceWindow
+import ru.itmo.dws.calendar.core.service.utils.TimeSlotUtils.subtractBusyFromWindow
 
 @Service
 class MeetingRoomService(
     private val roomProvider: MeetingRoomProvider,
     private val bookingProvider: MeetingRoomBookingProvider,
+    private val slotStep: Duration = Duration.ofMinutes(15),
+    private val defaultZone: ZoneId = ZoneId.of("UTC"),
 ) : MeetingRoomQueryUseCase, MeetingRoomBookingUseCase {
 
     override fun findRooms(criteria: MeetingRoomSearchCriteria): List<MeetingRoom> {
@@ -33,7 +42,37 @@ class MeetingRoomService(
     }
 
     override fun findAvailableSlots(roomId: MeetingRoomId, date: LocalDate, duration: Duration): List<TimeSlot> {
-        TODO()
+        require(duration.isPositive) { "duration must be positive" }
+        require(slotStep.isPositive) { "slotStep must be positive" }
+
+        val room = roomProvider.findById(roomId) ?: throw MeetingRoomNotFound(roomId)
+        if (room.status != MeetingRoomStatus.ACTIVE) return emptyList()
+
+        val zone = room.location.timeZoneId ?: defaultZone
+
+        val dayStart = ZonedDateTime.of(date, LocalTime.MIDNIGHT, zone)
+        val dayEnd = dayStart.plusDays(1)
+
+        val busySlots = bookingProvider.findBookingsInRange(roomId, dayStart, dayEnd)
+            .asSequence()
+            .filter { it.status == BookingStatus.CONFIRMED }
+            .map { it.timeSlot }
+            .map { clipToWindow(it, dayStart, dayEnd) }
+            .filterNotNull()
+            .sortedBy { it.start }
+            .toList()
+
+        val mergedBusy = mergeOverlappingOrAdjacent(busySlots)
+        val freeWindows = subtractBusyFromWindow(TimeSlot(dayStart, dayEnd), mergedBusy)
+
+        return freeWindows.flatMap { window ->
+            sliceWindow(
+                window = window,
+                duration = duration,
+                step = slotStep,
+                alignmentBase = dayStart,
+            )
+        }
     }
 
     override fun findAvailableRooms(timeSlot: TimeSlot, criteria: MeetingRoomSearchCriteria?): List<MeetingRoom> {

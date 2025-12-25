@@ -1,13 +1,13 @@
 package ru.itmo.dws.calendar.core.service.utils
 
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
-import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 
 class TimeSlotUtilsTest {
 
@@ -173,8 +173,8 @@ class TimeSlotUtilsTest {
     fun `subtractBusyFromWindow ignores busy slots outside the window`() {
         val w = slot(10, 0, 12, 0)
         val busy = listOf(
-            slot(8, 0, 9, 0),    // before
-            slot(13, 0, 14, 0)   // after
+            slot(8, 0, 9, 0), // before
+            slot(13, 0, 14, 0) // after
         )
 
         val free = TimeSlotUtils.subtractBusyFromWindow(w, busy)

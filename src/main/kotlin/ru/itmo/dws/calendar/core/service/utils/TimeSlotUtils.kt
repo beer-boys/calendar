@@ -1,8 +1,8 @@
 package ru.itmo.dws.calendar.core.service.utils
 
-import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import java.time.Duration
 import java.time.ZonedDateTime
+import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 
 object TimeSlotUtils {
 
@@ -36,6 +36,7 @@ object TimeSlotUtils {
         return result
     }
 
+    @Suppress("LoopWithTooManyJumpStatements")
     fun subtractBusyFromWindow(window: TimeSlot, busy: List<TimeSlot>): List<TimeSlot> {
         if (busy.isEmpty()) return listOf(window)
 
