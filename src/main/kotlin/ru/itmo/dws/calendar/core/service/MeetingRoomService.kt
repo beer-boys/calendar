@@ -14,6 +14,7 @@ import ru.itmo.dws.calendar.core.domain.model.MeetingRoom.MeetingRoomStatus
 import ru.itmo.dws.calendar.core.domain.model.MeetingRoomBooking
 import ru.itmo.dws.calendar.core.domain.model.MeetingRoomBooking.BookingStatus
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
+import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomBookingId
 import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomId
 import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomSearchCriteria
@@ -35,11 +36,16 @@ open class MeetingRoomService(
     private val defaultZone: ZoneId = ZoneId.of("UTC"),
 ) : MeetingRoomQueryUseCase, MeetingRoomBookingUseCase {
 
-    override fun findRooms(criteria: MeetingRoomSearchCriteria): List<MeetingRoom> {
+    override fun findRooms(criteria: MeetingRoomSearchCriteria, userId: UserId): List<MeetingRoom> {
         return roomProvider.findAllByCriteria(criteria)
     }
 
-    override fun findAvailableSlots(roomId: MeetingRoomId, date: LocalDate, duration: Duration): List<TimeSlot> {
+    override fun findAvailableSlots(
+        roomId: MeetingRoomId,
+        date: LocalDate,
+        duration: Duration,
+        userId: UserId,
+    ): List<TimeSlot> {
         require(duration.isPositive) { "duration must be positive" }
         require(slotStep.isPositive) { "slotStep must be positive" }
 
@@ -73,7 +79,11 @@ open class MeetingRoomService(
         }
     }
 
-    override fun findAvailableRooms(timeSlot: TimeSlot, criteria: MeetingRoomSearchCriteria?): List<MeetingRoom> {
+    override fun findAvailableRooms(
+        timeSlot: TimeSlot,
+        criteria: MeetingRoomSearchCriteria?,
+        userId: UserId,
+    ): List<MeetingRoom> {
         val rooms = (
             criteria?.let { roomProvider.findAllByCriteria(it) }
                 ?: roomProvider.findAllByCriteria(MeetingRoomSearchCriteria(status = MeetingRoomStatus.ACTIVE))
@@ -105,7 +115,7 @@ open class MeetingRoomService(
         bookingProvider.cancel(command.bookingId)
     }
 
-    override fun getBooking(bookingId: MeetingRoomBookingId): MeetingRoomBooking {
+    override fun getBooking(bookingId: MeetingRoomBookingId, userId: UserId): MeetingRoomBooking {
         return bookingProvider.findById(bookingId) ?: throw BookingNotFound(bookingId)
     }
 }

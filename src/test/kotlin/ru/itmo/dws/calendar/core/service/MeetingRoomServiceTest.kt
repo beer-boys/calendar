@@ -35,6 +35,7 @@ class MeetingRoomServiceTest {
     private val service = MeetingRoomService(roomProvider, bookingProvider, slotStep = step)
 
     private val moscow = ZoneId.of("Europe/Moscow")
+    private val userId = UserId.generate()
 
     private fun room(roomId: MeetingRoomId) = MeetingRoom(
         id = roomId,
@@ -61,7 +62,12 @@ class MeetingRoomServiceTest {
         every { roomProvider.findById(roomId) } returns null
 
         assertThatThrownBy {
-            service.findAvailableSlots(roomId, LocalDate.of(2025, 1, 10), Duration.ofHours(1))
+            service.findAvailableSlots(
+                roomId,
+                LocalDate.of(2025, 1, 10),
+                Duration.ofHours(1),
+                userId
+            )
         }.isInstanceOf(MeetingRoomNotFound::class.java)
     }
 
@@ -74,7 +80,7 @@ class MeetingRoomServiceTest {
         val date = LocalDate.of(2025, 1, 10)
         val duration = Duration.ofHours(1)
 
-        val slots = service.findAvailableSlots(roomId, date, duration)
+        val slots = service.findAvailableSlots(roomId, date, duration, userId)
 
         // 24/7: сутки = 24ч, длительность=1ч, шаг=15м => (24-1)/0.25 + 1 = 93 слота
         assertThat(slots).hasSize(93)
@@ -101,7 +107,7 @@ class MeetingRoomServiceTest {
             booking(roomId, busyStart, busyEnd)
         )
 
-        val slots = service.findAvailableSlots(roomId, date, Duration.ofHours(1))
+        val slots = service.findAvailableSlots(roomId, date, Duration.ofHours(1), userId)
 
         // Проверим ключевые слоты вокруг занятости.
         assertThat(slots).contains(TimeSlot(dayStart.plusHours(9), dayStart.plusHours(10))) // 09:00-10:00 OK
@@ -134,7 +140,7 @@ class MeetingRoomServiceTest {
             booking(roomId, busyStart, busyEnd)
         )
 
-        val slots = service.findAvailableSlots(roomId, date, Duration.ofMinutes(30))
+        val slots = service.findAvailableSlots(roomId, date, Duration.ofMinutes(30), userId)
 
         // 23:00-23:30 должно быть доступно (end == busy.start => не пересекается)
         assertThat(slots).contains(TimeSlot(dayStart.plusHours(23), dayStart.plusHours(23).plusMinutes(30)))
@@ -148,7 +154,9 @@ class MeetingRoomServiceTest {
         )
 
         // 23:30-00:00 пересекается
-        assertThat(slots).doesNotContain(TimeSlot(dayStart.plusHours(23).plusMinutes(30), dayStart.plusDays(1)))
+        assertThat(slots).doesNotContain(
+            TimeSlot(dayStart.plusHours(23).plusMinutes(30), dayStart.plusDays(1))
+        )
     }
 
     @Test
@@ -165,7 +173,7 @@ class MeetingRoomServiceTest {
         every { bookingProvider.findBusyRoomIds(setOf(room1.id, room2.id, room3.id), timeSlot) } returns setOf(room2.id)
 
         // Вызов
-        val result = service.findAvailableRooms(timeSlot, null)
+        val result = service.findAvailableRooms(timeSlot, null, userId)
 
         // Проверка
         assertThat(result).containsExactlyInAnyOrder(room1, room3)
@@ -181,7 +189,7 @@ class MeetingRoomServiceTest {
         every { roomProvider.findAllByCriteria(any()) } returns listOf(room1, room2)
         every { bookingProvider.findBusyRoomIds(setOf(room1.id, room2.id), timeSlot) } returns setOf(room1.id, room2.id)
 
-        val result = service.findAvailableRooms(timeSlot, null)
+        val result = service.findAvailableRooms(timeSlot, null, userId)
 
         assertThat(result).isEmpty()
     }
@@ -196,7 +204,7 @@ class MeetingRoomServiceTest {
         every { roomProvider.findAllByCriteria(any()) } returns listOf(room1, room2)
         every { bookingProvider.findBusyRoomIds(setOf(room1.id, room2.id), timeSlot) } returns emptySet()
 
-        val result = service.findAvailableRooms(timeSlot, null)
+        val result = service.findAvailableRooms(timeSlot, null, userId)
 
         assertThat(result).containsExactlyInAnyOrder(room1, room2)
     }
@@ -223,7 +231,7 @@ class MeetingRoomServiceTest {
         every { roomProvider.findAllByCriteria(criteria) } returns listOf(room1, room2)
         every { bookingProvider.findBusyRoomIds(setOf(room1.id, room2.id), timeSlot) } returns emptySet()
 
-        val result = service.findAvailableRooms(timeSlot, criteria)
+        val result = service.findAvailableRooms(timeSlot, criteria, userId)
         assertThat(result).containsExactlyInAnyOrder(room1, room2)
     }
 
@@ -238,7 +246,7 @@ class MeetingRoomServiceTest {
         )
         every { bookingProvider.findBusyRoomIds(setOf(room1.id), timeSlot) } returns emptySet()
 
-        val result = service.findAvailableRooms(timeSlot, null)
+        val result = service.findAvailableRooms(timeSlot, null, userId)
 
         assertThat(result).containsExactly(room1)
     }

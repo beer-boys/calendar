@@ -25,5 +25,5 @@ interface MeetingRoomBookingUseCase {
 
     fun cancelBooking(command: CancelMeetingRoomBookingCommand)
 
-    fun getBooking(bookingId: MeetingRoomBookingId): MeetingRoomBooking
+    fun getBooking(bookingId: MeetingRoomBookingId, userId: UserId): MeetingRoomBooking
 }
