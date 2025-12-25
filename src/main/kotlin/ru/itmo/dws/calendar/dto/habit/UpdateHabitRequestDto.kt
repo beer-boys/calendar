@@ -10,7 +10,6 @@ import ru.itmo.dws.calendar.core.domain.valueobject.BufferDuration
 import ru.itmo.dws.calendar.core.domain.valueobject.Priority
 
 data class UpdateHabitRequestDto(
-    // Валидация срабатывает только если поле не null
     val title: String? = null,
     val description: String? = null,
 
@@ -36,7 +35,6 @@ data class UpdateHabitRequestDto(
     val rules: List<SchedulingRuleRequestDto>? = null
 ) {
     fun toDomain(): UpdateHabitRequest {
-        // Дополнительная валидация для title - только если передан
         require(title == null || title.isNotBlank()) { "Title cannot be blank" }
 
         return UpdateHabitRequest(
