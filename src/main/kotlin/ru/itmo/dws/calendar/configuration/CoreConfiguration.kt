@@ -24,10 +24,10 @@ import ru.itmo.dws.calendar.core.service.HabitManagementService
 import ru.itmo.dws.calendar.core.service.HabitSchedulingService
 import ru.itmo.dws.calendar.core.service.HabitSyncService
 import ru.itmo.dws.calendar.core.service.MeetingRoomService
-import ru.itmo.dws.calendar.core.service.provider.DatabaseMeetingRoomBookingProvider
-import ru.itmo.dws.calendar.core.service.provider.DatabaseMeetingRoomProvider
 import ru.itmo.dws.calendar.core.service.feed.CalendarFeedService
 import ru.itmo.dws.calendar.core.service.feed.HabitOccurrenceEventProvider
+import ru.itmo.dws.calendar.core.service.provider.DatabaseMeetingRoomBookingProvider
+import ru.itmo.dws.calendar.core.service.provider.DatabaseMeetingRoomProvider
 import ru.itmo.dws.calendar.core.service.provider.FocusTimeEventProvider
 import ru.itmo.dws.calendar.core.service.provider.HabitEventProvider
 import ru.itmo.dws.calendar.core.service.provider.MeetingEventProvider
@@ -37,6 +37,7 @@ import ru.itmo.dws.calendar.repository.MeetingRoomRepository
 import ru.itmo.dws.calendar.service.util.ClockService
 
 @Configuration
+@Suppress("TooManyFunctions")
 class CoreConfiguration {
 
     @Bean
