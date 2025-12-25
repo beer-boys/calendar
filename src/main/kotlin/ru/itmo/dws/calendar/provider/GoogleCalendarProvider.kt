@@ -1,10 +1,13 @@
 package ru.itmo.dws.calendar.provider
 
+import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.services.calendar.model.Colors
 import com.google.api.services.calendar.model.Event
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import ru.itmo.dws.calendar.core.domain.exception.ExternalEventNotFoundException
 import ru.itmo.dws.calendar.dto.google.CreateEventRequest
 import ru.itmo.dws.calendar.dto.google.toGoogleEventDateTime
 import ru.itmo.dws.calendar.security.OAuth2Service
@@ -171,8 +174,15 @@ class GoogleCalendarProvider(
             request.recurrence.let { existingEvent.recurrence = it }
 
             calendar.events().patch(calendarId, eventId, existingEvent).execute()
+        } catch (e: GoogleJsonResponseException) {
+            if (e.statusCode == HttpStatus.NOT_FOUND.value()) {
+                log.warn("External event {} not found in calendar {}, was likely deleted", eventId, calendarId)
+                throw ExternalEventNotFoundException(eventId)
+            }
+            log.error("Error while patching event {} in calendarId={}", eventId, calendarId, e)
+            null
         } catch (expected: Exception) {
-            log.error("Error while creating event in calendarId={}", calendarId, expected)
+            log.error("Error while patching event {} in calendarId={}", eventId, calendarId, expected)
             null
         }
     }

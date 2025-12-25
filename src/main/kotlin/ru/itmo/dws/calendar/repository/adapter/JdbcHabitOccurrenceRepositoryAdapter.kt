@@ -92,6 +92,11 @@ class JdbcHabitOccurrenceRepositoryAdapter(
               AND occurrence_date >= :startDate 
               AND occurrence_date <= :endDate
         """
+
+        private const val DELETE_BY_HABIT_AND_DATE_SQL = """
+            DELETE FROM habit_occurrences 
+            WHERE habit_id = :habitId AND occurrence_date = :date
+        """
     }
 
     private val rowMapper = HabitOccurrenceRowMapper()
@@ -154,6 +159,13 @@ class JdbcHabitOccurrenceRepositoryAdapter(
             .addValue("startDate", startDate)
             .addValue("endDate", endDate)
         return jdbcTemplate.update(DELETE_BY_HABIT_AND_RANGE_SQL, params)
+    }
+
+    override fun delete(occurrence: HabitOccurrence): Boolean {
+        val params = MapSqlParameterSource()
+            .addValue("habitId", occurrence.habitId.value)
+            .addValue("date", occurrence.date)
+        return jdbcTemplate.update(DELETE_BY_HABIT_AND_DATE_SQL, params) > 0
     }
 
     private fun buildParams(occurrence: HabitOccurrence): MapSqlParameterSource {

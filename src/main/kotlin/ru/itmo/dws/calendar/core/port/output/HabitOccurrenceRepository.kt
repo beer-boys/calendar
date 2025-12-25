@@ -31,4 +31,6 @@ interface HabitOccurrenceRepository {
         startDate: LocalDate,
         endDate: LocalDate
     ): Int
+
+    fun delete(occurrence: HabitOccurrence): Boolean
 }

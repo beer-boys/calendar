@@ -78,4 +78,9 @@ open class InMemoryHabitOccurrenceRepository : HabitOccurrenceRepository {
         keysToRemove.forEach { occurrences.remove(it) }
         return keysToRemove.size
     }
+
+    override fun delete(occurrence: HabitOccurrence): Boolean {
+        val key = key(occurrence.habitId, occurrence.date)
+        return occurrences.remove(key) != null
+    }
 }
