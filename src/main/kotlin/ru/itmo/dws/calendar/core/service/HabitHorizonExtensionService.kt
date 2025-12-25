@@ -11,6 +11,7 @@ import ru.itmo.dws.calendar.core.port.output.HabitOccurrenceRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
 import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
 
+@Suppress("LongParameterList")
 class HabitHorizonExtensionService(
     private val habitRepository: HabitRepository,
     private val occurrenceRepository: HabitOccurrenceRepository,

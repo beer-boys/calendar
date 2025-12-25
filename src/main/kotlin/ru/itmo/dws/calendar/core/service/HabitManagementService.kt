@@ -1,7 +1,6 @@
 package ru.itmo.dws.calendar.core.service
 
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZoneId
 import org.slf4j.LoggerFactory
 import ru.itmo.dws.calendar.core.domain.model.CreateHabitRequest
@@ -180,36 +179,6 @@ class HabitManagementService(
         endDate: LocalDate
     ): List<HabitOccurrence> {
         return occurrenceRepository.findByHabitIdAndDateRange(habitId, startDate, endDate)
-    }
-
-    private fun findSlotForDate(
-        habit: Habit,
-        date: LocalDate,
-        preferredStartTime: LocalTime?
-    ): TimeSlot? {
-        val occupiedSlots = collectOccupiedSlotsForUser(habit.userId, date, habit.id.toString())
-
-        return eventSlotFinder.findOptimalSlot(
-            event = habit,
-            date = date,
-            baseTimeWindow = habit.flexibilityTimeRange(),
-            eventDuration = habit.duration,
-            occupiedSlots = occupiedSlots,
-            bufferTime = habit.bufferTime,
-            preferredStartTime = preferredStartTime,
-            zoneId = zoneId
-        )
-    }
-
-    private fun collectOccupiedSlotsForUser(
-        userId: UserId,
-        date: LocalDate,
-        excludeEventId: String? = null
-    ): List<TimeSlot> {
-        val allEvents = eventProviders.flatMap { provider ->
-            provider.getEventsForUserOnDate(userId, date)
-        }
-        return eventSlotFinder.collectOccupiedSlots(allEvents, excludeEventId)
     }
 
     private fun detectConflictsForHabit(habit: Habit, date: LocalDate): List<HabitConflict> {
