@@ -4,8 +4,7 @@ import java.time.LocalDate
 import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
-import org.springframework.security.oauth2.core.user.OAuth2User
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -29,6 +28,7 @@ import ru.itmo.dws.calendar.dto.habit.HabitSchedulePlanDto
 import ru.itmo.dws.calendar.dto.habit.HabitSyncResultDto
 import ru.itmo.dws.calendar.dto.habit.ScheduleHabitRequestDto
 import ru.itmo.dws.calendar.dto.habit.UpdateHabitRequestDto
+import ru.itmo.dws.calendar.model.User
 
 @RestController
 @RequestMapping("${BasePath.BASE}/habits")
@@ -39,10 +39,10 @@ class HabitController(
 
     @PostMapping
     fun createHabit(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: User,
         @RequestBody request: CreateHabitRequestDto
     ): ResponseEntity<HabitCreationResultDto> {
-        val userId = extractUserId(authentication)
+        val userId = UserId(user.id)
         val domainRequest = request.toDomain(userId)
         val result = habitManagementUseCase.createHabit(domainRequest)
 
@@ -53,10 +53,10 @@ class HabitController(
 
     @GetMapping
     fun getHabits(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: User,
         @RequestParam(required = false) date: LocalDate?
     ): ResponseEntity<List<HabitResponseDto>> {
-        val userId = extractUserId(authentication)
+        val userId = UserId(user.id)
 
         val habits = if (date != null) {
             habitManagementUseCase.getHabitsForDate(userId, date)
@@ -69,10 +69,10 @@ class HabitController(
 
     @GetMapping("/{habitId}")
     fun getHabit(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: User,
         @PathVariable habitId: UUID
     ): ResponseEntity<HabitResponseDto> {
-        val userId = extractUserId(authentication)
+        val userId = UserId(user.id)
         val habit = habitManagementUseCase.getHabit(HabitId(habitId))
             ?: throw HabitNotFoundException(HabitId(habitId))
 
@@ -85,11 +85,11 @@ class HabitController(
 
     @GetMapping("/{habitId}/plan")
     fun getHabitSchedulePlan(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: User,
         @PathVariable habitId: UUID,
         @RequestParam(defaultValue = "4") weeks: Int
     ): ResponseEntity<HabitSchedulePlanDto> {
-        val userId = extractUserId(authentication)
+        val userId = UserId(user.id)
         val habit = habitManagementUseCase.getHabit(HabitId(habitId))
             ?: throw HabitNotFoundException(HabitId(habitId))
 
@@ -103,11 +103,11 @@ class HabitController(
 
     @PutMapping("/{habitId}")
     fun updateHabit(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: User,
         @PathVariable habitId: UUID,
         @RequestBody request: UpdateHabitRequestDto
     ): ResponseEntity<HabitResponseDto> {
-        val userId = extractUserId(authentication)
+        val userId = UserId(user.id)
         val habit = habitManagementUseCase.getHabit(HabitId(habitId))
             ?: throw HabitNotFoundException(HabitId(habitId))
 
@@ -125,10 +125,10 @@ class HabitController(
 
     @DeleteMapping("/{habitId}")
     fun deleteHabit(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: User,
         @PathVariable habitId: UUID
     ): ResponseEntity<Unit> {
-        val userId = extractUserId(authentication)
+        val userId = UserId(user.id)
         val habit = habitManagementUseCase.getHabit(HabitId(habitId))
             ?: throw HabitNotFoundException(HabitId(habitId))
 
@@ -142,11 +142,11 @@ class HabitController(
 
     @PostMapping("/{habitId}/schedule")
     fun scheduleHabit(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: User,
         @PathVariable habitId: UUID,
         @RequestBody request: ScheduleHabitRequestDto
     ): ResponseEntity<HabitResponseDto> {
-        val userId = extractUserId(authentication)
+        val userId = UserId(user.id)
         val habit = habitManagementUseCase.getHabit(HabitId(habitId))
             ?: throw HabitNotFoundException(HabitId(habitId))
 
@@ -166,11 +166,11 @@ class HabitController(
 
     @DeleteMapping("/{habitId}/schedule")
     fun clearHabitSchedule(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: User,
         @PathVariable habitId: UUID,
         @RequestParam date: LocalDate
     ): ResponseEntity<HabitResponseDto> {
-        val userId = extractUserId(authentication)
+        val userId = UserId(user.id)
         val habit = habitManagementUseCase.getHabit(HabitId(habitId))
             ?: throw HabitNotFoundException(HabitId(habitId))
 
@@ -188,11 +188,11 @@ class HabitController(
 
     @PostMapping("/{habitId}/sync")
     fun syncHabitToExternalCalendar(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: User,
         @PathVariable habitId: UUID,
         @RequestParam(defaultValue = "4") weeks: Int
     ): ResponseEntity<HabitSyncResultDto> {
-        val userId = extractUserId(authentication)
+        val userId = UserId(user.id)
         val habit = habitManagementUseCase.getHabit(HabitId(habitId))
             ?: throw HabitNotFoundException(HabitId(habitId))
 
@@ -206,12 +206,12 @@ class HabitController(
 
     @GetMapping("/{habitId}/occurrences")
     fun getHabitOccurrences(
-        authentication: OAuth2AuthenticationToken,
+        @AuthenticationPrincipal user: User,
         @PathVariable habitId: UUID,
         @RequestParam(required = false) startDate: LocalDate?,
         @RequestParam(required = false) endDate: LocalDate?
     ): ResponseEntity<List<HabitOccurrenceDto>> {
-        val userId = extractUserId(authentication)
+        val userId = UserId(user.id)
         val habit = habitManagementUseCase.getHabit(HabitId(habitId))
             ?: throw HabitNotFoundException(HabitId(habitId))
 
@@ -226,12 +226,5 @@ class HabitController(
         }
 
         return ResponseEntity.ok(occurrences.map { HabitOccurrenceDto.fromDomain(it) })
-    }
-
-    private fun extractUserId(authentication: OAuth2AuthenticationToken): UserId {
-        val oAuth2User: OAuth2User = authentication.principal
-        val email = oAuth2User.getAttribute<String>("email")
-        checkNotNull(email) { "Email not found in OAuth2 token" }
-        return UserId(UUID.nameUUIDFromBytes(email.toByteArray()))
     }
 }

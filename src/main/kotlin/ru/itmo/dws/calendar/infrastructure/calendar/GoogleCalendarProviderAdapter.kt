@@ -7,6 +7,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import org.slf4j.LoggerFactory
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import ru.itmo.dws.calendar.core.domain.exception.ExternalCalendarSyncException
 import ru.itmo.dws.calendar.core.domain.model.CalendarEvent
@@ -32,13 +33,13 @@ class GoogleCalendarProviderAdapter(
     private val log = LoggerFactory.getLogger(GoogleCalendarProviderAdapter::class.java)
 
     override fun getEvents(userId: UserId, timeRange: TimeSlot): List<CalendarEvent> {
-        val auth = CalendarAuthContext.get() ?: run {
-            log.debug("No OAuth2 auth available, returning empty events for user {}", userId)
+        val username = getCurrentUsername() ?: run {
+            log.debug("No user context available, returning empty events for user {}", userId)
             return emptyList()
         }
 
         return try {
-            val eventsJson = googleCalendarProvider.getEventsByCalendarId(auth, PRIMARY_CALENDAR)
+            val eventsJson = googleCalendarProvider.getEventsByCalendarId(username, PRIMARY_CALENDAR)
             parseEventsFromJson(eventsJson, userId)
         } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
             log.warn("Failed to get events for user {}: {}", userId, e.message)
@@ -54,10 +55,10 @@ class GoogleCalendarProviderAdapter(
     }
 
     override fun createEvent(userId: UserId, event: SchedulableEvent): String {
-        val auth = CalendarAuthContext.requireAuth()
+        val username = requireCurrentUsername()
         val request = toCreateEventRequest(event)
 
-        val createdEvent = googleCalendarProvider.createEvent(auth, PRIMARY_CALENDAR, request)
+        val createdEvent = googleCalendarProvider.createEvent(username, PRIMARY_CALENDAR, request)
             ?: throw ExternalCalendarSyncException("Failed to create event in external calendar")
 
         log.info("Created event {} in external calendar for user {}", createdEvent.id, userId)
@@ -65,10 +66,10 @@ class GoogleCalendarProviderAdapter(
     }
 
     override fun createRecurringEvent(userId: UserId, habit: Habit): String {
-        val auth = CalendarAuthContext.requireAuth()
+        val username = requireCurrentUsername()
         val request = toRecurringEventRequest(habit)
 
-        val createdEvent = googleCalendarProvider.createEvent(auth, PRIMARY_CALENDAR, request)
+        val createdEvent = googleCalendarProvider.createEvent(username, PRIMARY_CALENDAR, request)
             ?: throw ExternalCalendarSyncException("Failed to create recurring event in external calendar")
 
         log.info("Created recurring event {} in external calendar for user {}", createdEvent.id, userId)
@@ -76,10 +77,10 @@ class GoogleCalendarProviderAdapter(
     }
 
     override fun updateEvent(userId: UserId, externalEventId: String, event: SchedulableEvent): Boolean {
-        val auth = CalendarAuthContext.requireAuth()
+        val username = requireCurrentUsername()
         val request = toCreateEventRequest(event)
 
-        val updatedEvent = googleCalendarProvider.patchEvent(auth, PRIMARY_CALENDAR, externalEventId, request)
+        val updatedEvent = googleCalendarProvider.patchEvent(username, PRIMARY_CALENDAR, externalEventId, request)
 
         return if (updatedEvent != null) {
             log.info("Updated event {} in external calendar for user {}", externalEventId, userId)
@@ -91,10 +92,10 @@ class GoogleCalendarProviderAdapter(
     }
 
     override fun updateRecurringEvent(userId: UserId, externalEventId: String, habit: Habit): Boolean {
-        val auth = CalendarAuthContext.requireAuth()
+        val username = requireCurrentUsername()
         val request = toRecurringEventRequest(habit)
 
-        val updatedEvent = googleCalendarProvider.patchEvent(auth, PRIMARY_CALENDAR, externalEventId, request)
+        val updatedEvent = googleCalendarProvider.patchEvent(username, PRIMARY_CALENDAR, externalEventId, request)
 
         return if (updatedEvent != null) {
             log.info("Updated recurring event {} in external calendar for user {}", externalEventId, userId)
@@ -106,10 +107,10 @@ class GoogleCalendarProviderAdapter(
     }
 
     override fun deleteEvent(userId: UserId, externalEventId: String): Boolean {
-        val auth = CalendarAuthContext.requireAuth()
+        val username = requireCurrentUsername()
 
         return try {
-            googleCalendarProvider.deleteEventById(auth, PRIMARY_CALENDAR, externalEventId)
+            googleCalendarProvider.deleteEventById(username, PRIMARY_CALENDAR, externalEventId)
             log.info("Deleted event {} from external calendar for user {}", externalEventId, userId)
             true
         } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
@@ -304,6 +305,15 @@ class GoogleCalendarProviderAdapter(
             log.debug("Failed to parse datetime {}: {}", dateTime, e.message)
             null
         }
+    }
+
+    private fun getCurrentUsername(): String? {
+        return SecurityContextHolder.getContext().authentication?.name
+    }
+
+    private fun requireCurrentUsername(): String {
+        return getCurrentUsername()
+            ?: error("User authentication required but not available in SecurityContext")
     }
 
     companion object {
