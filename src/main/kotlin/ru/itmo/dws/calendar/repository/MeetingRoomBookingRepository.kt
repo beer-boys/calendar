@@ -1,6 +1,6 @@
 package ru.itmo.dws.calendar.repository
 
-import java.time.OffsetDateTime
+import java.time.Instant
 import java.util.UUID
 import org.springframework.data.jdbc.repository.query.Query
 import org.springframework.data.repository.CrudRepository
@@ -21,8 +21,8 @@ interface MeetingRoomBookingRepository :
     )
     fun findConfirmedOverlappingInRange(
         roomId: UUID,
-        fromInclusive: OffsetDateTime,
-        toExclusive: OffsetDateTime,
+        fromInclusive: Instant,
+        toExclusive: Instant,
     ): List<MeetingRoomBookingEntity>
 
     @Query(
@@ -36,7 +36,7 @@ interface MeetingRoomBookingRepository :
     )
     fun findBusyRoomIds(
         roomIds: Collection<UUID>,
-        startTime: OffsetDateTime,
-        endTime: OffsetDateTime,
+        startTime: Instant,
+        endTime: Instant,
     ): Set<UUID>
 }

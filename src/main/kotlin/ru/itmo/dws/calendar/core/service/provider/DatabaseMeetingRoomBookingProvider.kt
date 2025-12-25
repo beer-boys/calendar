@@ -1,7 +1,6 @@
 package ru.itmo.dws.calendar.core.service.provider
 
 import java.time.ZoneId
-import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
@@ -48,8 +47,8 @@ class DatabaseMeetingRoomBookingProvider(
 
         val list = repository.findConfirmedOverlappingInRange(
             roomId = roomId.value,
-            fromInclusive = fromInclusive.toInstant().atOffset(ZoneOffset.UTC),
-            toExclusive = toExclusive.toInstant().atOffset(ZoneOffset.UTC),
+            fromInclusive = fromInclusive.toInstant(),
+            toExclusive = toExclusive.toInstant(),
         )
         return list.map { it.toDomain(zone) }
     }
@@ -58,8 +57,8 @@ class DatabaseMeetingRoomBookingProvider(
         if (roomIds.isEmpty()) return emptySet()
         val busy = repository.findBusyRoomIds(
             roomIds = roomIds.map { it.value },
-            startTime = timeSlot.start.toInstant().atOffset(ZoneOffset.UTC),
-            endTime = timeSlot.end.toInstant().atOffset(ZoneOffset.UTC),
+            startTime = timeSlot.start.toInstant(),
+            endTime = timeSlot.end.toInstant(),
         )
         return busy.map { MeetingRoomId(it) }.toSet()
     }
