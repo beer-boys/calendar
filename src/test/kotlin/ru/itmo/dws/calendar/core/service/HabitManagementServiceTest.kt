@@ -77,7 +77,6 @@ class HabitManagementServiceTest {
             conflictDetectionService = conflictDetectionService,
             habitSchedulingService = habitSchedulingService,
             habitSyncService = habitSyncService,
-            calendarProvider = null,
             zoneId = zoneId
         )
     }

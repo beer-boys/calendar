@@ -45,18 +45,18 @@ class JdbcHabitRepositoryAdapter(
 
         private const val INSERT_SQL = """
             INSERT INTO calendar_events (
-                id, user_id, entity_type, external_event_id, 
+                id, user_id, entity_type, 
                 title, description, priority, metadata, 
                 created_at, updated_at
             ) VALUES (
-                :id, :userId, :entityType::entity_type, :externalEventId,
+                :id, :userId, :entityType::entity_type,
                 :title, :description, :priority, :metadata::jsonb,
                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
             )
         """
 
         private const val SELECT_BY_ID_SQL = """
-            SELECT id, user_id, entity_type, external_event_id, 
+            SELECT id, user_id, entity_type, 
                    title, description, priority, metadata,
                    created_at, updated_at
             FROM calendar_events 
@@ -64,11 +64,19 @@ class JdbcHabitRepositoryAdapter(
         """
 
         private const val SELECT_BY_USER_SQL = """
-            SELECT id, user_id, entity_type, external_event_id, 
+            SELECT id, user_id, entity_type, 
                    title, description, priority, metadata,
                    created_at, updated_at
             FROM calendar_events 
             WHERE user_id = :userId AND entity_type = 'HABIT'
+        """
+
+        private const val SELECT_ALL_SQL = """
+            SELECT id, user_id, entity_type, 
+                   title, description, priority, metadata,
+                   created_at, updated_at
+            FROM calendar_events 
+            WHERE entity_type = 'HABIT'
         """
 
         private const val UPDATE_SQL = """
@@ -77,7 +85,6 @@ class JdbcHabitRepositoryAdapter(
                 description = :description,
                 priority = :priority,
                 metadata = :metadata::jsonb,
-                external_event_id = :externalEventId,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = :id AND entity_type = 'HABIT'
         """
@@ -98,7 +105,6 @@ class JdbcHabitRepositoryAdapter(
             .addValue("id", habit.id.value)
             .addValue("userId", habit.userId.value)
             .addValue("entityType", ENTITY_TYPE)
-            .addValue("externalEventId", habit.externalEventId)
             .addValue("title", habit.title)
             .addValue("description", habit.description)
             .addValue("priority", habit.priority.value)
@@ -127,6 +133,10 @@ class JdbcHabitRepositoryAdapter(
         return findHabits(userId).filter { it.shouldOccurOn(date) }
     }
 
+    override fun findAllHabits(): List<Habit> {
+        return jdbcTemplate.query(SELECT_ALL_SQL, habitRowMapper)
+    }
+
     override fun updateHabit(habitId: HabitId, habit: Habit): Boolean {
         val metadata = toMetadata(habit)
         val metadataJson = objectMapper.writeValueAsString(metadata)
@@ -137,7 +147,6 @@ class JdbcHabitRepositoryAdapter(
             .addValue("description", habit.description)
             .addValue("priority", habit.priority.value)
             .addValue("metadata", metadataJson)
-            .addValue("externalEventId", habit.externalEventId)
 
         return jdbcTemplate.update(UPDATE_SQL, params) > 0
     }
@@ -264,8 +273,7 @@ class JdbcHabitRepositoryAdapter(
                 priority = Priority(rs.getInt("priority")),
                 currentTimeSlot = currentTimeSlot,
                 bufferTime = bufferTime,
-                schedulingRules = rules,
-                externalEventId = rs.getString("external_event_id")
+                schedulingRules = rules
             )
         }
 

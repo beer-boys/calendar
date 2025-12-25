@@ -15,6 +15,8 @@ interface HabitRepository {
 
     fun findHabitsForDate(userId: UserId, date: LocalDate): List<Habit>
 
+    fun findAllHabits(): List<Habit>
+
     fun updateHabit(habitId: HabitId, habit: Habit): Boolean
 
     fun deleteHabit(habitId: HabitId): Boolean

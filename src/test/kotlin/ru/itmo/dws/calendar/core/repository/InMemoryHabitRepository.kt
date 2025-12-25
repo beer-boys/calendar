@@ -23,6 +23,8 @@ open class InMemoryHabitRepository : HabitRepository {
     override fun findHabitsForDate(userId: UserId, date: LocalDate): List<Habit> =
         habits.values.filter { it.userId == userId && it.shouldOccurOn(date) }
 
+    override fun findAllHabits(): List<Habit> = habits.values.toList()
+
     override fun updateHabit(habitId: HabitId, habit: Habit): Boolean {
         if (habits.containsKey(habitId)) {
             habits[habitId] = habit

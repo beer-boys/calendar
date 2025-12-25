@@ -262,13 +262,5 @@ class HabitSyncServiceTest {
             userIds: List<UserId>,
             timeRange: TimeSlot
         ): Map<UserId, List<ru.itmo.dws.calendar.core.domain.model.CalendarEvent>> = emptyMap()
-
-        override fun createRecurringEvent(userId: UserId, habit: Habit): String {
-            return "recurring-event-${UUID.randomUUID()}"
-        }
-
-        override fun updateRecurringEvent(userId: UserId, externalEventId: String, habit: Habit): Boolean {
-            return true
-        }
     }
 }

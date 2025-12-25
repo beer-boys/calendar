@@ -24,8 +24,7 @@ data class HabitResponseDto(
     val bufferBeforeMinutes: Long,
     val bufferAfterMinutes: Long,
     val currentTimeSlot: TimeSlotResponseDto?,
-    val rules: List<SchedulingRuleResponseDto>,
-    val externalEventId: String?
+    val rules: List<SchedulingRuleResponseDto>
 ) {
     companion object {
         fun fromDomain(habit: Habit): HabitResponseDto {
@@ -53,8 +52,7 @@ data class HabitResponseDto(
                 currentTimeSlot = habit.currentTimeSlot?.let {
                     TimeSlotResponseDto(start = it.start, end = it.end)
                 },
-                rules = habit.schedulingRules.map { SchedulingRuleResponseDto.fromDomain(it) },
-                externalEventId = habit.externalEventId
+                rules = habit.schedulingRules.map { SchedulingRuleResponseDto.fromDomain(it) }
             )
         }
     }
