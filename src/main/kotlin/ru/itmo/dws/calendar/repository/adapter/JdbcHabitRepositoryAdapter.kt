@@ -79,6 +79,14 @@ class JdbcHabitRepositoryAdapter(
             WHERE entity_type = 'HABIT'
         """
 
+        private const val SELECT_BY_IDS_SQL = """
+            SELECT id, user_id, entity_type, 
+                   title, description, priority, metadata,
+                   created_at, updated_at
+            FROM calendar_events 
+            WHERE id IN (:ids) AND entity_type = 'HABIT'
+        """
+
         private const val UPDATE_SQL = """
             UPDATE calendar_events SET
                 title = :title,
@@ -131,6 +139,15 @@ class JdbcHabitRepositoryAdapter(
 
     override fun findHabitsForDate(userId: UserId, date: LocalDate): List<Habit> {
         return findHabits(userId).filter { it.shouldOccurOn(date) }
+    }
+
+    override fun findByIds(habitIds: List<HabitId>): List<Habit> {
+        if (habitIds.isEmpty()) return emptyList()
+
+        val params = MapSqlParameterSource()
+            .addValue("ids", habitIds.map { it.value })
+
+        return jdbcTemplate.query(SELECT_BY_IDS_SQL, params, habitRowMapper)
     }
 
     override fun findAllHabits(): List<Habit> {

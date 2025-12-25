@@ -11,6 +11,7 @@ import ru.itmo.dws.calendar.core.domain.model.HabitOccurrence
 import ru.itmo.dws.calendar.core.domain.model.OccurrenceStatus
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
+import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 import ru.itmo.dws.calendar.core.port.output.HabitOccurrenceRepository
 
 @Component
@@ -97,6 +98,18 @@ class JdbcHabitOccurrenceRepositoryAdapter(
             DELETE FROM habit_occurrences 
             WHERE habit_id = :habitId AND occurrence_date = :date
         """
+
+        private const val SELECT_BY_USER_AND_RANGE_SQL = """
+            SELECT ho.id, ho.habit_id, ho.occurrence_date, ho.status, ho.slot_start, ho.slot_end, 
+                   ho.external_event_id, ho.reason, ho.created_at, ho.updated_at
+            FROM habit_occurrences ho
+            JOIN calendar_events ce ON ho.habit_id = ce.id
+            WHERE ce.user_id = :userId 
+              AND ce.entity_type = 'HABIT'
+              AND ho.occurrence_date >= :startDate 
+              AND ho.occurrence_date <= :endDate
+            ORDER BY ho.occurrence_date, ho.slot_start
+        """
     }
 
     private val rowMapper = HabitOccurrenceRowMapper()
@@ -166,6 +179,18 @@ class JdbcHabitOccurrenceRepositoryAdapter(
             .addValue("habitId", occurrence.habitId.value)
             .addValue("date", occurrence.date)
         return jdbcTemplate.update(DELETE_BY_HABIT_AND_DATE_SQL, params) > 0
+    }
+
+    override fun findByUserIdAndDateRange(
+        userId: UserId,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): List<HabitOccurrence> {
+        val params = MapSqlParameterSource()
+            .addValue("userId", userId.value)
+            .addValue("startDate", startDate)
+            .addValue("endDate", endDate)
+        return jdbcTemplate.query(SELECT_BY_USER_AND_RANGE_SQL, params, rowMapper)
     }
 
     private fun buildParams(occurrence: HabitOccurrence): MapSqlParameterSource {

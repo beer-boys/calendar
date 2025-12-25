@@ -13,6 +13,10 @@ interface HabitRepository {
 
     fun findHabits(userId: UserId): List<Habit>
 
+    fun findByUserId(userId: UserId): List<Habit> = findHabits(userId)
+
+    fun findByIds(habitIds: List<HabitId>): List<Habit>
+
     fun findHabitsForDate(userId: UserId, date: LocalDate): List<Habit>
 
     fun findAllHabits(): List<Habit>

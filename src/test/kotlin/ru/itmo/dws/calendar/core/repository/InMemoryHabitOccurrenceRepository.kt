@@ -4,9 +4,13 @@ import java.time.LocalDate
 import java.util.concurrent.ConcurrentHashMap
 import ru.itmo.dws.calendar.core.domain.model.HabitOccurrence
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
+import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 import ru.itmo.dws.calendar.core.port.output.HabitOccurrenceRepository
+import ru.itmo.dws.calendar.core.port.output.HabitRepository
 
-open class InMemoryHabitOccurrenceRepository : HabitOccurrenceRepository {
+open class InMemoryHabitOccurrenceRepository(
+    private val habitRepository: HabitRepository? = null
+) : HabitOccurrenceRepository {
     private val occurrences = ConcurrentHashMap<String, HabitOccurrence>()
 
     private fun key(habitId: HabitId, date: LocalDate): String = "${habitId.value}_$date"
@@ -82,5 +86,20 @@ open class InMemoryHabitOccurrenceRepository : HabitOccurrenceRepository {
     override fun delete(occurrence: HabitOccurrence): Boolean {
         val key = key(occurrence.habitId, occurrence.date)
         return occurrences.remove(key) != null
+    }
+
+    override fun findByUserIdAndDateRange(
+        userId: UserId,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): List<HabitOccurrence> {
+        val userHabitIds = habitRepository?.findByUserId(userId)?.map { it.id }?.toSet()
+            ?: return emptyList()
+
+        return occurrences.values.filter {
+            it.habitId in userHabitIds &&
+                !it.date.isBefore(startDate) &&
+                !it.date.isAfter(endDate)
+        }.sortedWith(compareBy({ it.date }, { it.timeSlot?.start }))
     }
 }
