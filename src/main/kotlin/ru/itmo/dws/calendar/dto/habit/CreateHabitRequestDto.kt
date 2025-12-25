@@ -2,6 +2,12 @@ package ru.itmo.dws.calendar.dto.habit
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Positive
+import jakarta.validation.constraints.PositiveOrZero
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDate
@@ -19,15 +25,34 @@ import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlotOverride
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 
 data class CreateHabitRequestDto(
+    @field:NotBlank(message = "Title cannot be blank")
     val title: String,
+
     val description: String? = null,
+
+    @field:Positive(message = "Duration must be positive")
     val durationMinutes: Long,
+
+    @field:NotNull(message = "Recurrence rule is required")
+    @field:Valid
     val recurrence: RecurrenceDto,
+
+    @field:NotNull(message = "Flexibility window is required")
+    @field:Valid
     val flexibility: FlexibilityDto,
+
+    @field:Min(value = 1, message = "Priority must be at least 1")
     val priority: Int? = null,
+
+    @field:PositiveOrZero(message = "Buffer before minutes must be non-negative")
     val bufferBeforeMinutes: Long? = null,
+
+    @field:PositiveOrZero(message = "Buffer after minutes must be non-negative")
     val bufferAfterMinutes: Long? = null,
+
     val preferredStartTime: LocalTime? = null,
+
+    @field:Valid
     val rules: List<SchedulingRuleRequestDto>? = null
 ) {
     fun toDomain(userId: UserId): CreateHabitRequest {
@@ -50,30 +75,57 @@ data class CreateHabitRequestDto(
 }
 
 data class RecurrenceDto(
+    @field:NotBlank(message = "Frequency is required")
     val frequency: String,
+
     val daysOfWeek: Set<DayOfWeek>? = null,
+
+    @field:Positive(message = "Interval must be positive")
     val interval: Int = 1,
+
     val startDate: LocalDate? = null,
     val endDate: LocalDate? = null
 ) {
     fun toDomain(): RecurrenceRule {
+        val parsedFrequency = try {
+            RecurrenceRule.Frequency.valueOf(frequency.uppercase())
+        } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+            val validValues = RecurrenceRule.Frequency.entries.joinToString()
+            error("Invalid frequency: '$frequency'. Must be one of: $validValues")
+        }
+
+        val effectiveStartDate = startDate ?: LocalDate.now()
+        require(endDate == null || !endDate.isBefore(effectiveStartDate)) {
+            "End date must be after start date"
+        }
+
         return RecurrenceRule(
-            frequency = RecurrenceRule.Frequency.valueOf(frequency.uppercase()),
+            frequency = parsedFrequency,
             daysOfWeek = daysOfWeek ?: emptySet(),
             interval = interval,
-            startDate = startDate ?: LocalDate.now(),
+            startDate = effectiveStartDate,
             endDate = endDate
         )
     }
 }
 
 data class FlexibilityDto(
+    @field:NotNull(message = "Earliest time is required")
     val earliestTime: LocalTime,
+
+    @field:NotNull(message = "Latest time is required")
     val latestTime: LocalTime,
+
     val allowCrossDayMove: Boolean = false,
+
+    @field:Positive(message = "Preferred duration must be positive")
     val preferredDurationMinutes: Long? = null
 ) {
     fun toDomain(): HabitFlexibilityWindow {
+        require(latestTime.isAfter(earliestTime)) {
+            "Latest time must be after earliest time"
+        }
+
         return HabitFlexibilityWindow(
             earliestTime = earliestTime,
             latestTime = latestTime,
@@ -99,8 +151,12 @@ sealed interface SchedulingRuleRequestDto {
 }
 
 data class TimeWindowRuleRequestDto(
+    @field:NotNull(message = "Earliest time is required")
     val earliestTime: LocalTime,
+
+    @field:NotNull(message = "Latest time is required")
     val latestTime: LocalTime,
+
     val activeDateRangeStart: LocalDate? = null,
     val activeDateRangeEnd: LocalDate? = null,
     val activeDaysOfWeek: Set<DayOfWeek>? = null
@@ -132,9 +188,16 @@ data class ExclusionRuleRequestDto(
 }
 
 data class FrequencyRuleRequestDto(
+    @field:Positive(message = "Period days must be positive")
     val periodDays: Long,
+
+    @field:PositiveOrZero(message = "Min occurrences must be non-negative")
     val minOccurrences: Int? = null,
+
+    @field:PositiveOrZero(message = "Max occurrences must be non-negative")
     val maxOccurrences: Int? = null,
+
+    @field:PositiveOrZero(message = "Min gap minutes must be non-negative")
     val minGapMinutes: Long? = null
 ) : SchedulingRuleRequestDto {
     override fun toDomain(): SchedulingRule = SchedulingRule.FrequencyRule(
@@ -156,7 +219,10 @@ data class RecurrenceExceptionRuleRequestDto(
 }
 
 data class DayTimeExclusionRequestDto(
+    @field:NotNull(message = "Day of week is required")
     val dayOfWeek: DayOfWeek,
+
+    @field:Valid
     val excludedRanges: List<TimeRangeRequestDto>? = null
 ) {
     fun toDomain(): DayTimeExclusion {
@@ -168,7 +234,10 @@ data class DayTimeExclusionRequestDto(
 }
 
 data class TimeRangeRequestDto(
+    @field:NotNull(message = "Start time is required")
     val start: LocalTime,
+
+    @field:NotNull(message = "End time is required")
     val end: LocalTime
 ) {
     fun toDomain(): TimeRange {
@@ -179,6 +248,8 @@ data class TimeRangeRequestDto(
 data class TimeSlotOverrideRequestDto(
     val newStartTime: LocalTime? = null,
     val newEndTime: LocalTime? = null,
+
+    @field:Positive(message = "New duration must be positive")
     val newDurationMinutes: Long? = null
 ) {
     fun toDomain(): TimeSlotOverride {

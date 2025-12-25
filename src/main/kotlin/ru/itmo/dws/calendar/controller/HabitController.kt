@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import java.time.LocalDate
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -56,7 +57,7 @@ class HabitController(
     )
     fun createHabit(
         @AuthenticationPrincipal user: User,
-        @RequestBody request: CreateHabitRequestDto
+        @Valid @RequestBody request: CreateHabitRequestDto
     ): ResponseEntity<HabitCreationResultDto> {
         val userId = UserId(user.id)
         val domainRequest = request.toDomain(userId)
@@ -152,7 +153,7 @@ class HabitController(
     fun updateHabit(
         @AuthenticationPrincipal user: User,
         @Parameter(description = "ID привычки") @PathVariable habitId: UUID,
-        @RequestBody request: UpdateHabitRequestDto
+        @Valid @RequestBody request: UpdateHabitRequestDto
     ): ResponseEntity<HabitResponseDto> {
         val userId = UserId(user.id)
         val habit = habitManagementUseCase.getHabit(HabitId(habitId))
@@ -210,7 +211,7 @@ class HabitController(
     fun scheduleHabit(
         @AuthenticationPrincipal user: User,
         @Parameter(description = "ID привычки") @PathVariable habitId: UUID,
-        @RequestBody request: ScheduleHabitRequestDto
+        @Valid @RequestBody request: ScheduleHabitRequestDto
     ): ResponseEntity<HabitResponseDto> {
         val userId = UserId(user.id)
         val habit = habitManagementUseCase.getHabit(HabitId(habitId))
