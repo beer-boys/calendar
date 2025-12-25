@@ -1,7 +1,6 @@
 package ru.itmo.dws.calendar.core.service.provider
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.springframework.stereotype.Component
 import ru.itmo.dws.calendar.core.domain.model.MeetingRoom
 import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomId
 import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomSearchCriteria
@@ -9,8 +8,7 @@ import ru.itmo.dws.calendar.core.port.output.room.MeetingRoomProvider
 import ru.itmo.dws.calendar.mapper.toDomain
 import ru.itmo.dws.calendar.repository.MeetingRoomRepository
 
-@Component
-class DatabaseMeetingRoomProvider(
+open class DatabaseMeetingRoomProvider(
     private val repository: MeetingRoomRepository,
     private val objectMapper: ObjectMapper,
 ) : MeetingRoomProvider {

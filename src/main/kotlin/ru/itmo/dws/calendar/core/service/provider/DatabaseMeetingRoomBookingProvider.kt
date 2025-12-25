@@ -6,7 +6,6 @@ import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.relational.core.conversion.DbActionExecutionException
-import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import ru.itmo.dws.calendar.core.domain.exception.TimeSlotNotAvailable
 import ru.itmo.dws.calendar.core.domain.model.MeetingRoomBooking
@@ -19,8 +18,7 @@ import ru.itmo.dws.calendar.mapper.toDomain
 import ru.itmo.dws.calendar.mapper.toEntity
 import ru.itmo.dws.calendar.repository.MeetingRoomBookingRepository
 
-@Component
-class DatabaseMeetingRoomBookingProvider(
+open class DatabaseMeetingRoomBookingProvider(
     private val repository: MeetingRoomBookingRepository,
     private val meetingRoomProvider: MeetingRoomProvider,
 ) : MeetingRoomBookingProvider {

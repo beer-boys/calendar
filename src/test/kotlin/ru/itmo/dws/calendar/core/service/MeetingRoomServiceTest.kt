@@ -230,7 +230,6 @@ class MeetingRoomServiceTest {
     @Test
     fun `findAvailableRooms filters only active rooms when no criteria`() {
         val room1 = room(MeetingRoomId(UUID.randomUUID())).copy(status = MeetingRoomStatus.ACTIVE)
-        val room2 = room(MeetingRoomId(UUID.randomUUID())).copy(status = MeetingRoomStatus.INACTIVE)
 
         val timeSlot = TimeSlot(ZonedDateTime.now(), ZonedDateTime.now().plusHours(1))
 

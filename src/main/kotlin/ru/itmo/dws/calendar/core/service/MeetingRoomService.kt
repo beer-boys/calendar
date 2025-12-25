@@ -5,7 +5,6 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.itmo.dws.calendar.core.domain.exception.BookingNotFound
 import ru.itmo.dws.calendar.core.domain.exception.MeetingRoomInactive
@@ -29,8 +28,7 @@ import ru.itmo.dws.calendar.core.service.utils.TimeSlotUtils.mergeOverlappingOrA
 import ru.itmo.dws.calendar.core.service.utils.TimeSlotUtils.sliceWindow
 import ru.itmo.dws.calendar.core.service.utils.TimeSlotUtils.subtractBusyFromWindow
 
-@Service
-class MeetingRoomService(
+open class MeetingRoomService(
     private val roomProvider: MeetingRoomProvider,
     private val bookingProvider: MeetingRoomBookingProvider,
     private val slotStep: Duration = Duration.ofMinutes(15),
