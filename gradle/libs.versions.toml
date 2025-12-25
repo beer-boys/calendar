@@ -3,6 +3,7 @@ kotlin = "2.0.10"
 detekt = "1.23.7"
 testcontainers = "2.0.1"
 jjwt = "0.13.0"
+springdoc = "2.8.8"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -23,6 +24,8 @@ spring-starter-oauth2-client = { module = "org.springframework.boot:spring-boot-
 spring-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-starter-email = { module = "org.springframework.boot:spring-boot-starter-mail" }
 spring-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+
+springdoc-openapi-starter = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 
 fasterxml-jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 
