@@ -7,6 +7,7 @@ import ru.itmo.dws.calendar.core.domain.valueobject.HabitFlexibilityWindow
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
 import ru.itmo.dws.calendar.core.domain.valueobject.Priority
 import ru.itmo.dws.calendar.core.domain.valueobject.RecurrenceRule
+import ru.itmo.dws.calendar.core.domain.valueobject.SchedulingRule
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 
 data class CreateHabitRequest(
@@ -18,7 +19,8 @@ data class CreateHabitRequest(
     val flexibilityWindow: HabitFlexibilityWindow,
     val priority: Priority = Priority.forHabit(),
     val bufferTime: BufferDuration = BufferDuration.NONE,
-    val preferredStartTime: LocalTime? = null
+    val preferredStartTime: LocalTime? = null,
+    val rules: List<SchedulingRule> = emptyList()
 ) {
     init {
         require(title.isNotBlank()) { "Habit title cannot be blank" }
@@ -35,7 +37,8 @@ data class CreateHabitRequest(
             recurrenceRule = recurrenceRule,
             flexibilityWindow = flexibilityWindow,
             priority = priority,
-            bufferTime = bufferTime
+            bufferTime = bufferTime,
+            schedulingRules = rules
         )
     }
 }
@@ -47,7 +50,8 @@ data class UpdateHabitRequest(
     val recurrenceRule: RecurrenceRule? = null,
     val flexibilityWindow: HabitFlexibilityWindow? = null,
     val priority: Priority? = null,
-    val bufferTime: BufferDuration? = null
+    val bufferTime: BufferDuration? = null,
+    val rules: List<SchedulingRule>? = null
 ) {
     fun applyTo(habit: Habit): Habit {
         return habit.copy(
@@ -57,7 +61,8 @@ data class UpdateHabitRequest(
             recurrenceRule = recurrenceRule ?: habit.recurrenceRule,
             flexibilityWindow = flexibilityWindow ?: habit.flexibilityWindow,
             priority = priority ?: habit.priority,
-            bufferTime = bufferTime ?: habit.bufferTime
+            bufferTime = bufferTime ?: habit.bufferTime,
+            schedulingRules = rules ?: habit.schedulingRules
         )
     }
 }

@@ -8,6 +8,7 @@ object BasePath {
     const val AUTH_REFRESH = "$BASE/auth/refresh"
 
     const val GOOGLE_BASE = "$BASE/google"
+    const val HABITS_BASE = "$BASE/habits"
     const val GOOGLE_OAUTH2 = "/oauth2/authorization/google"
     const val GOOGLE_CALLBACK = "/login/oauth2/code/google"
 
@@ -19,6 +20,8 @@ object BasePath {
         "$BASE/me",
     )
     val GOOGLE_WHITE_LIST = listOf(
+        "$GOOGLE_BASE/**",
+        "$HABITS_BASE/**",
         "$GOOGLE_OAUTH2/**",
         "$GOOGLE_CALLBACK/**",
     )

@@ -8,6 +8,8 @@ import ru.itmo.dws.calendar.core.domain.valueobject.HabitFlexibilityWindow
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
 import ru.itmo.dws.calendar.core.domain.valueobject.Priority
 import ru.itmo.dws.calendar.core.domain.valueobject.RecurrenceRule
+import ru.itmo.dws.calendar.core.domain.valueobject.SchedulingRule
+import ru.itmo.dws.calendar.core.domain.valueobject.TimeRange
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 
@@ -21,7 +23,9 @@ data class Habit(
     val flexibilityWindow: HabitFlexibilityWindow,
     override val priority: Priority = Priority.forHabit(),
     val currentTimeSlot: TimeSlot? = null,
-    val bufferTime: BufferDuration = BufferDuration.NONE
+    val bufferTime: BufferDuration = BufferDuration.NONE,
+    override val schedulingRules: List<SchedulingRule> = emptyList(),
+    val externalEventId: String? = null
 ) : SchedulableEvent {
 
     override val eventId: String get() = id.toString()
@@ -72,7 +76,14 @@ data class Habit(
 
     fun withBufferTime(newBufferTime: BufferDuration): Habit = copy(bufferTime = newBufferTime)
 
+    fun withExternalEventId(eventId: String): Habit = copy(externalEventId = eventId)
+
     fun preferredStartTime(): LocalTime? = flexibilityWindow.preferredDuration?.let {
         flexibilityWindow.earliestTime
     }
+
+    fun flexibilityTimeRange(): TimeRange = TimeRange(
+        start = flexibilityWindow.earliestTime,
+        end = flexibilityWindow.latestTime
+    )
 }

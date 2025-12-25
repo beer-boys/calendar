@@ -6,7 +6,40 @@ services:
       - "5432:5432"
     volumes:
       - "./init-scripts:/docker-entrypoint-initdb.d:ro"
+      - "postgres_data:/var/lib/postgresql/data"
     environment:
       POSTGRES_DB: calendar
       POSTGRES_USER: db_admin
       POSTGRES_PASSWORD: db_admin
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U db_admin -d calendar"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: calendar-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/calendar?currentSchema=calendar
+      - SPRING_DATASOURCE_USERNAME=calendar
+      - SPRING_DATASOURCE_PASSWORD=calendar
+      - SPRING_LIQUIBASE_USER=liquibase
+      - SPRING_LIQUIBASE_PASSWORD=liquibase
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - JWT_SECRET_ACCESS=${JWT_SECRET_ACCESS:-super-secret-access-key-for-jwt-tokens-minimum-256-bits}
+      - JWT_SECRET_REFRESH=${JWT_SECRET_REFRESH:-super-secret-refresh-key-for-jwt-tokens-minimum-256-bits}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
