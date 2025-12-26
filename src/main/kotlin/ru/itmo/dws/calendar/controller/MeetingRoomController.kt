@@ -52,7 +52,7 @@ class MeetingRoomController(private val meetingRoomQueryUseCase: MeetingRoomQuer
         @RequestParam(required = false) floor: Int?,
         @RequestParam(required = false) building: String?,
         @RequestParam(required = false) status: String?,
-        @RequestParam(required = false) requiredFeatures: List<String>,
+        @RequestParam(required = false) requiredFeatures: List<String>?,
     ): List<MeetingRoomResponseDto> {
         val criteria = buildCriteria(
             minCapacity,
@@ -85,7 +85,7 @@ class MeetingRoomController(private val meetingRoomQueryUseCase: MeetingRoomQuer
         @RequestParam(required = false) floor: Int?,
         @RequestParam(required = false) building: String?,
         @RequestParam(required = false) status: String?,
-        @RequestParam(required = false) requiredFeatures: List<String>,
+        @RequestParam(required = false) requiredFeatures: List<String>?,
     ): List<MeetingRoomResponseDto> {
         val slot = TimeSlot(startTime, endTime)
         val criteria = buildCriteria(
@@ -136,9 +136,9 @@ class MeetingRoomController(private val meetingRoomQueryUseCase: MeetingRoomQuer
         floor: Int?,
         building: String?,
         status: String?,
-        requiredFeatures: List<String>,
+        requiredFeatures: List<String>?,
     ): MeetingRoomSearchCriteria {
-        val features = requiredFeatures.mapNotNullTo(mutableSetOf()) { RoomFeature.fromString(it) }
+        val features = requiredFeatures.orEmpty().mapNotNullTo(mutableSetOf()) { RoomFeature.fromString(it) }
 
         return MeetingRoomSearchCriteria(
             minCapacity = minCapacity,
