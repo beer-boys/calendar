@@ -37,7 +37,12 @@ class GoogleCalendarProviderAdapter(
         }
 
         return try {
-            val eventsJson = googleCalendarProvider.getEventsByCalendarId(username, PRIMARY_CALENDAR)
+            val eventsJson = googleCalendarProvider.getEventsByCalendarId(
+                username,
+                PRIMARY_CALENDAR,
+                timeMin = timeRange.start,
+                timeMax = timeRange.end
+            )
             parseEventsFromJson(eventsJson, userId)
         } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
             log.warn("Failed to get events for user {}: {}", userId, e.message)
@@ -126,7 +131,7 @@ class GoogleCalendarProviderAdapter(
         )
     }
 
-    private fun toEventDateTime(zonedDateTime: java.time.ZonedDateTime): EventDateTime {
+    private fun toEventDateTime(zonedDateTime: ZonedDateTime): EventDateTime {
         val googleDateTime = DateTime(zonedDateTime.toInstant().toEpochMilli())
         return EventDateTime(
             date = null,
