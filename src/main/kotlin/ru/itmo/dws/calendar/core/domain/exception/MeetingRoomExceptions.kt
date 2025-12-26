@@ -14,3 +14,6 @@ class TimeSlotNotAvailable(roomId: MeetingRoomId, slot: TimeSlot) :
 
 class BookingNotFound(bookingId: Any) :
     CalendarDomainException("Booking not found: $bookingId")
+
+class BookingIsForbidden(bookingId: Any, userId: Any) :
+    CalendarDomainException("Booking $bookingId is forbidden for user $userId")

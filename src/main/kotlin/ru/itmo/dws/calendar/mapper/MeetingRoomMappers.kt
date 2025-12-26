@@ -15,6 +15,12 @@ import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomId
 import ru.itmo.dws.calendar.core.domain.valueobject.room.RoomFeature
 import ru.itmo.dws.calendar.core.domain.valueobject.room.RoomFeatures
 import ru.itmo.dws.calendar.core.domain.valueobject.room.RoomLocation
+import ru.itmo.dws.calendar.dto.TimeSlotDto
+import ru.itmo.dws.calendar.dto.room.MeetingRoomResponseDto
+import ru.itmo.dws.calendar.dto.room.MeetingRoomStatusDto
+import ru.itmo.dws.calendar.dto.room.RoomLocationResponseDto
+import ru.itmo.dws.calendar.dto.room.booking.BookingStatusDto
+import ru.itmo.dws.calendar.dto.room.booking.RoomBookingResponseDto
 import ru.itmo.dws.calendar.model.MeetingRoomBookingEntity
 import ru.itmo.dws.calendar.model.MeetingRoomEntity
 import ru.itmo.dws.calendar.model.types.JsonbString
@@ -75,6 +81,26 @@ fun MeetingRoom.toEntity(objectMapper: ObjectMapper): MeetingRoomEntity {
     )
 }
 
+fun MeetingRoom.toResponseDto(): MeetingRoomResponseDto {
+    return MeetingRoomResponseDto(
+        id = id.value,
+        name = name,
+        capacity = capacity,
+        location = RoomLocationResponseDto(
+            address = location.address,
+            building = location.building,
+            floor = location.floor,
+            wing = location.wing,
+            roomNumber = location.roomNumber,
+            city = location.city,
+            timeZoneId = location.timeZoneId?.id
+        ),
+        features = features.features.map(RoomFeature::name).toSet(),
+        attributes = features.attributes,
+        status = MeetingRoomStatusDto.fromEntity(status),
+    )
+}
+
 fun MeetingRoomBookingEntity.toDomain(roomZoneId: ZoneId) = MeetingRoomBooking(
     id = MeetingRoomBookingId(id),
     roomId = MeetingRoomId(roomId),
@@ -95,4 +121,13 @@ fun MeetingRoomBooking.toEntity() = MeetingRoomBookingEntity(
     status = status.name,
     startTime = timeSlot.start.toInstant(),
     endTime = timeSlot.end.toInstant(),
+)
+
+fun MeetingRoomBooking.toResponseDto() = RoomBookingResponseDto(
+    id = id.value,
+    roomId = roomId.value,
+    organizerId = organizerId.value,
+    purpose = purpose,
+    status = BookingStatusDto.from(status),
+    timeSlot = TimeSlotDto.from(timeSlot),
 )

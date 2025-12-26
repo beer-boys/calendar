@@ -6,6 +6,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import org.springframework.transaction.annotation.Transactional
+import ru.itmo.dws.calendar.core.domain.exception.BookingIsForbidden
 import ru.itmo.dws.calendar.core.domain.exception.BookingNotFound
 import ru.itmo.dws.calendar.core.domain.exception.MeetingRoomInactive
 import ru.itmo.dws.calendar.core.domain.exception.MeetingRoomNotFound
@@ -111,11 +112,24 @@ open class MeetingRoomService(
         return bookingProvider.create(booking)
     }
 
+    @Transactional
     override fun cancelBooking(command: CancelMeetingRoomBookingCommand) {
+        val booking = bookingProvider.findById(command.bookingId) ?: throw BookingNotFound(command.bookingId)
+        if (booking.organizerId != command.cancelledBy) {
+            throw BookingIsForbidden(command.bookingId, command.cancelledBy)
+        }
         bookingProvider.cancel(command.bookingId)
     }
 
+    override fun getUserBookings(userId: UserId): List<MeetingRoomBooking> {
+        return bookingProvider.findByUserId(userId)
+    }
+
     override fun getBooking(bookingId: MeetingRoomBookingId, userId: UserId): MeetingRoomBooking {
-        return bookingProvider.findById(bookingId) ?: throw BookingNotFound(bookingId)
+        val booking = bookingProvider.findById(bookingId) ?: throw BookingNotFound(bookingId)
+        if (booking.organizerId != userId) {
+            throw BookingIsForbidden(bookingId, userId)
+        }
+        return booking
     }
 }

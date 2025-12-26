@@ -17,6 +17,13 @@ data class MeetingRoom(
         ACTIVE,
         INACTIVE,
         MAINTENANCE,
+        ;
+
+        companion object {
+            fun fromString(value: String): MeetingRoomStatus? {
+                return entries.firstOrNull { value.uppercase() == it.name }
+            }
+        }
     }
 
     init {

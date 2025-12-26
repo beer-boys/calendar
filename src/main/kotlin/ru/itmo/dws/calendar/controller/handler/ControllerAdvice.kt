@@ -5,6 +5,7 @@ import org.springframework.http.ProblemDetail
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
+import ru.itmo.dws.calendar.core.domain.exception.BookingIsForbidden
 import ru.itmo.dws.calendar.core.domain.exception.BookingNotFound
 import ru.itmo.dws.calendar.core.domain.exception.CalendarDomainException
 import ru.itmo.dws.calendar.core.domain.exception.MeetingRoomInactive
@@ -29,6 +30,7 @@ class ControllerAdvice : ResponseEntityExceptionHandler() {
             is MeetingRoomNotFound -> HttpStatus.NOT_FOUND
             is TimeSlotNotAvailable -> HttpStatus.CONFLICT
             is MeetingRoomInactive -> HttpStatus.CONFLICT
+            is BookingIsForbidden -> HttpStatus.FORBIDDEN
             else -> HttpStatus.INTERNAL_SERVER_ERROR
         }
 

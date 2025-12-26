@@ -39,4 +39,12 @@ interface MeetingRoomBookingRepository :
         startTime: Instant,
         endTime: Instant,
     ): Set<UUID>
+
+    @Query(
+        """
+        select * from meeting_room_bookings
+        where organizer_id = :organizerId
+    """
+    )
+    fun findAllByOrganizerId(organizerId: UUID): List<MeetingRoomBookingEntity>
 }

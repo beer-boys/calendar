@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional
 import ru.itmo.dws.calendar.core.domain.exception.TimeSlotNotAvailable
 import ru.itmo.dws.calendar.core.domain.model.MeetingRoomBooking
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
+import ru.itmo.dws.calendar.core.domain.valueobject.UserId
 import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomBookingId
 import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomId
 import ru.itmo.dws.calendar.core.port.output.room.MeetingRoomBookingProvider
@@ -33,6 +34,11 @@ open class DatabaseMeetingRoomBookingProvider(
         val room = meetingRoomProvider.findById(MeetingRoomId(entity.roomId)) ?: return null
         val zone = room.location.timeZoneId ?: UTC_TIME_ZONE
         return entity.toDomain(zone)
+    }
+
+    // todo fix zone
+    override fun findByUserId(userId: UserId): List<MeetingRoomBooking> {
+        return repository.findAllByOrganizerId(userId.value).map { it.toDomain(UTC_TIME_ZONE) }
     }
 
     override fun findBookingsInRange(

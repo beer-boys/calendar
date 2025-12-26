@@ -6,6 +6,7 @@ import java.util.UUID
 value class UserId(val value: UUID) {
     companion object {
         fun generate(): UserId = UserId(UUID.randomUUID())
+        fun of(value: UUID): UserId = UserId(value)
         fun of(value: String): UserId = UserId(UUID.fromString(value))
     }
 
