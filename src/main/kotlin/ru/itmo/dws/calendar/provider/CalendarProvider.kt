@@ -16,6 +16,8 @@ interface CalendarProvider {
     fun getEventsByCalendarId(
         username: String,
         calendarId: String,
+        timeMin: java.time.ZonedDateTime? = null,
+        timeMax: java.time.ZonedDateTime? = null
     ): String
 
     fun getEventByEventIdAndCalendarId(

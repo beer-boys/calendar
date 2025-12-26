@@ -1,6 +1,7 @@
 package ru.itmo.dws.calendar.provider
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
+import com.google.api.client.util.DateTime
 import com.google.api.services.calendar.model.Colors
 import com.google.api.services.calendar.model.Event
 import org.slf4j.Logger
@@ -56,12 +57,23 @@ class GoogleCalendarProvider(
     override fun getEventsByCalendarId(
         username: String,
         calendarId: String,
+        timeMin: java.time.ZonedDateTime?,
+        timeMax: java.time.ZonedDateTime?
     ): String {
         return try {
             val accessToken = oAuth2Service.getAccessToken(username, PROVIDER_ID)
             val calendar = googleCalendarFactory.createWithAccessToken(accessToken)
 
-            val response = calendar.events().list(calendarId).execute()
+            val request = calendar.events().list(calendarId)
+
+            if (timeMin != null) {
+                request.timeMin = DateTime(timeMin.toInstant().toEpochMilli())
+            }
+            if (timeMax != null) {
+                request.timeMax = DateTime(timeMax.toInstant().toEpochMilli())
+            }
+
+            val response = request.execute()
             response.toPrettyString()
         } catch (expected: Exception) {
             log.error("Error while getting events for calendarId=$calendarId", expected)
