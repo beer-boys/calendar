@@ -3,9 +3,9 @@ package ru.itmo.dws.calendar.core.domain.model
 import ru.itmo.dws.calendar.core.domain.valueobject.BufferDuration
 import ru.itmo.dws.calendar.core.domain.valueobject.MeetingId
 import ru.itmo.dws.calendar.core.domain.valueobject.Priority
-import ru.itmo.dws.calendar.core.domain.valueobject.RoomId
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
+import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomId
 
 data class Meeting(
     val id: MeetingId,
@@ -14,7 +14,7 @@ data class Meeting(
     val participants: List<UserId>,
     override val title: String,
     override val description: String? = null,
-    val room: RoomId? = null,
+    val room: MeetingRoomId? = null,
     override val priority: Priority = Priority.forMeeting(),
     val bufferTime: BufferDuration = BufferDuration.NONE
 ) : SchedulableEvent {

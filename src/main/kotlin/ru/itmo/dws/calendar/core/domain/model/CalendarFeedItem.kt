@@ -7,9 +7,9 @@ import ru.itmo.dws.calendar.core.domain.valueobject.FocusTimeId
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitFlexibilityWindow
 import ru.itmo.dws.calendar.core.domain.valueobject.HabitId
 import ru.itmo.dws.calendar.core.domain.valueobject.MeetingId
-import ru.itmo.dws.calendar.core.domain.valueobject.RoomId
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
+import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomId
 
 data class CalendarFeedItem(
     val id: String,
@@ -96,7 +96,7 @@ sealed class ItemDetails {
     data class Meeting(
         val meetingId: MeetingId,
         val participants: List<UserId>,
-        val roomId: RoomId?,
+        val roomId: MeetingRoomId?,
         val bufferBefore: Duration?,
         val bufferAfter: Duration?,
         val isCreator: Boolean

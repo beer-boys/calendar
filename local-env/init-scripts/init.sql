@@ -12,6 +12,8 @@ GRANT CONNECT ON DATABASE calendar TO calendar;
 CREATE SCHEMA calendar
     AUTHORIZATION calendar;
 
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 GRANT USAGE ON SCHEMA calendar TO calendar;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA calendar TO calendar;
 

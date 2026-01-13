@@ -1,5 +1,7 @@
 package ru.itmo.dws.calendar.configuration
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import java.time.Duration
 import java.time.ZoneId
 import java.util.Optional
 import org.springframework.context.annotation.Bean
@@ -13,20 +15,29 @@ import ru.itmo.dws.calendar.core.port.output.HabitOccurrenceRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
 import ru.itmo.dws.calendar.core.port.output.InternalEventProvider
 import ru.itmo.dws.calendar.core.port.output.MeetingRepository
+import ru.itmo.dws.calendar.core.port.output.room.MeetingRoomBookingProvider
+import ru.itmo.dws.calendar.core.port.output.room.MeetingRoomProvider
 import ru.itmo.dws.calendar.core.service.ConflictDetectionService
 import ru.itmo.dws.calendar.core.service.EventSlotFinder
 import ru.itmo.dws.calendar.core.service.HabitHorizonExtensionService
 import ru.itmo.dws.calendar.core.service.HabitManagementService
 import ru.itmo.dws.calendar.core.service.HabitSchedulingService
 import ru.itmo.dws.calendar.core.service.HabitSyncService
+import ru.itmo.dws.calendar.core.service.MeetingRoomService
 import ru.itmo.dws.calendar.core.service.feed.CalendarFeedService
 import ru.itmo.dws.calendar.core.service.feed.HabitOccurrenceEventProvider
+import ru.itmo.dws.calendar.core.service.provider.DatabaseMeetingRoomBookingProvider
+import ru.itmo.dws.calendar.core.service.provider.DatabaseMeetingRoomProvider
 import ru.itmo.dws.calendar.core.service.provider.FocusTimeEventProvider
 import ru.itmo.dws.calendar.core.service.provider.HabitEventProvider
 import ru.itmo.dws.calendar.core.service.provider.MeetingEventProvider
 import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
+import ru.itmo.dws.calendar.repository.MeetingRoomBookingRepository
+import ru.itmo.dws.calendar.repository.MeetingRoomRepository
+import ru.itmo.dws.calendar.service.util.ClockService
 
 @Configuration
+@Suppress("TooManyFunctions")
 class CoreConfiguration {
 
     @Bean
@@ -159,6 +170,36 @@ class CoreConfiguration {
         return CalendarFeedService(
             calendarProvider = calendarProvider.orElse(null),
             eventProviders = internalEventProviders
+        )
+    }
+
+    @Bean
+    fun meetingRoomProvider(
+        repository: MeetingRoomRepository,
+        objectMapper: ObjectMapper,
+    ): MeetingRoomProvider {
+        return DatabaseMeetingRoomProvider(repository, objectMapper)
+    }
+
+    @Bean
+    fun meetingRoomBookingProvider(
+        repository: MeetingRoomBookingRepository,
+        meetingRoomProvider: MeetingRoomProvider,
+    ): MeetingRoomBookingProvider {
+        return DatabaseMeetingRoomBookingProvider(repository, meetingRoomProvider)
+    }
+
+    @Bean
+    fun meetingRoomService(
+        meetingRoomProvider: MeetingRoomProvider,
+        meetingRoomBookingProvider: MeetingRoomBookingProvider,
+        clockService: ClockService,
+    ): MeetingRoomService {
+        return MeetingRoomService(
+            meetingRoomProvider,
+            meetingRoomBookingProvider,
+            slotStep = Duration.ofMinutes(15),
+            defaultZone = clockService.offset()
         )
     }
 }

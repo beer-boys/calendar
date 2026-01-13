@@ -4,10 +4,10 @@ import java.time.Duration
 import java.util.UUID
 import ru.itmo.dws.calendar.core.domain.valueobject.BufferDuration
 import ru.itmo.dws.calendar.core.domain.valueobject.MeetingId
-import ru.itmo.dws.calendar.core.domain.valueobject.RoomId
 import ru.itmo.dws.calendar.core.domain.valueobject.SchedulingConstraints
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
+import ru.itmo.dws.calendar.core.domain.valueobject.room.MeetingRoomId
 
 data class MeetingDraft(
     val id: String = UUID.randomUUID().toString(),
@@ -17,7 +17,7 @@ data class MeetingDraft(
     val description: String? = null,
     val duration: Duration,
     val preferredTimeRange: TimeSlot? = null,
-    val room: RoomId? = null,
+    val room: MeetingRoomId? = null,
     val bufferTime: BufferDuration = BufferDuration.NONE,
     val constraints: SchedulingConstraints = SchedulingConstraints()
 ) {
