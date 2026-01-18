@@ -17,7 +17,6 @@ object BasePath {
         AUTH_REGISTER,
         AUTH_REFRESH,
         READYZ,
-        "$BASE/me",
 
         "/swagger-ui.html",
         "/swagger-ui/**",
