@@ -4,11 +4,13 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.util.DateTime
 import com.google.api.services.calendar.model.Colors
 import com.google.api.services.calendar.model.Event
+import com.google.api.services.calendar.model.EventAttendee
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import ru.itmo.dws.calendar.core.domain.exception.ExternalEventNotFoundException
+import ru.itmo.dws.calendar.dto.google.Attendee
 import ru.itmo.dws.calendar.dto.google.CreateEventRequest
 import ru.itmo.dws.calendar.dto.google.toGoogleEventDateTime
 import ru.itmo.dws.calendar.security.OAuth2Service
@@ -206,6 +208,7 @@ class GoogleCalendarProvider(
             eventType = request.eventType
             description = request.description
             recurrence = request.recurrence
+            attendees = getAttendees(request.attendees)
         }
 
         return event
@@ -221,5 +224,21 @@ class GoogleCalendarProvider(
         )
 
         return event
+    }
+
+    private fun getAttendees(attendees: List<Attendee>?): List<EventAttendee>? {
+        if (attendees == null) {
+            return null
+        }
+        return attendees.map { attendee ->
+            EventAttendee()
+                .setEmail(attendee.email)
+                .setDisplayName(attendee.displayName)
+                .setComment(attendee.comment)
+                .setAdditionalGuests(attendee.additionalGuests)
+                .setOptional(attendee.optional)
+                .setResource(attendee.resource)
+                .setResponseStatus(attendee.responseStatus)
+        }
     }
 }

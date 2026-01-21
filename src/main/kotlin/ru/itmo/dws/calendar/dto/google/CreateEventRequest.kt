@@ -55,14 +55,14 @@ data class FileUrl(
 )
 
 data class Attendee(
-    val additionalGuests: Int,
-    val comment: String,
-    val displayName: String,
+    val additionalGuests: Int?,
+    val comment: String?,
+    val displayName: String?,
     val email: String,
-    val optional: Boolean,
-    val resource: Boolean,
+    val optional: Boolean?,
+    val resource: Boolean?,
     // 'needsAction' | 'declined' | 'tentative' | 'accepted'
-    val responseStatus: String,
+    val responseStatus: String?,
 )
 
 data class BirthdayProperties(
