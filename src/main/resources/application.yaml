@@ -100,3 +100,14 @@ outbox:
 redirect:
   success: "/api/readyz"
   fail: "/api/auth/error"
+
+habit:
+  horizon:
+    planning-weeks: 4
+    extension-cron: "0 0 2 * * ?"
+    extension-enabled: true
+  conflict-resolution:
+    enabled: true
+    cron: "0 */1 * * * ?"
+    check-days-ahead: 7
+    max-alternative-days: 3
