@@ -21,6 +21,7 @@ import ru.itmo.dws.calendar.core.service.ConflictDetectionService
 import ru.itmo.dws.calendar.core.service.EventSlotFinder
 import ru.itmo.dws.calendar.core.service.HabitHorizonExtensionService
 import ru.itmo.dws.calendar.core.service.HabitManagementService
+import ru.itmo.dws.calendar.core.service.HabitOccurrenceConflictResolutionService
 import ru.itmo.dws.calendar.core.service.HabitSchedulingService
 import ru.itmo.dws.calendar.core.service.HabitSyncService
 import ru.itmo.dws.calendar.core.service.MeetingRoomService
@@ -201,6 +202,26 @@ class CoreConfiguration {
             meetingRoomBookingProvider,
             slotStep = Duration.ofMinutes(15),
             defaultZone = clockService.offset()
+        )
+    }
+
+    @Bean
+    fun habitOccurrenceConflictResolutionService(
+        habitOccurrenceRepository: HabitOccurrenceRepository,
+        habitRepository: HabitRepository,
+        conflictDetectionService: ConflictDetectionService,
+        eventSlotFinder: EventSlotFinder,
+        habitSyncService: HabitSyncService,
+        eventProviders: List<SchedulableEventProvider>
+    ): HabitOccurrenceConflictResolutionService {
+        return HabitOccurrenceConflictResolutionService(
+            habitOccurrenceRepository = habitOccurrenceRepository,
+            habitRepository = habitRepository,
+            conflictDetectionService = conflictDetectionService,
+            eventSlotFinder = eventSlotFinder,
+            habitSyncService = habitSyncService,
+            eventProviders = eventProviders,
+            zoneId = ZoneId.systemDefault()
         )
     }
 }

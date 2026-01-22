@@ -21,7 +21,8 @@ data class HabitOccurrence(
 enum class OccurrenceStatus {
     SCHEDULED,
     UNSCHEDULED,
-    CANCELLED
+    CANCELLED,
+    CONFLICT_UNRESOLVED
 }
 
 data class HabitSchedulePlan(
