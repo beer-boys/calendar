@@ -1,16 +1,21 @@
 package ru.itmo.dws.calendar.core.service
 
 import java.time.LocalDate
+import org.slf4j.LoggerFactory
 import ru.itmo.dws.calendar.core.domain.model.EventConflict
 import ru.itmo.dws.calendar.core.domain.model.EventType
 import ru.itmo.dws.calendar.core.domain.model.SchedulableEvent
 import ru.itmo.dws.calendar.core.domain.valueobject.TimeSlot
 import ru.itmo.dws.calendar.core.domain.valueobject.UserId
+import ru.itmo.dws.calendar.core.port.output.CalendarProvider
 import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
+import ru.itmo.dws.calendar.core.service.utils.ExternalEventAdapter
 
 class ConflictDetectionService(
-    private val eventProviders: List<SchedulableEventProvider>
+    private val eventProviders: List<SchedulableEventProvider>,
+    private val calendarProvider: CalendarProvider? = null
 ) {
+    private val log = LoggerFactory.getLogger(ConflictDetectionService::class.java)
 
     fun detectAllConflictsForUser(userId: UserId, date: LocalDate): List<EventConflict> {
         val allEvents = collectAllEventsForUser(userId, date)
@@ -36,11 +41,26 @@ class ConflictDetectionService(
         excludeEventId: String? = null
     ): List<EventConflict> {
         val date = timeSlot.start.toLocalDate()
-        val eventsInSlot = eventProviders
+
+        val internalEvents = eventProviders
             .flatMap { it.getEventsForUser(userId, timeSlot) }
             .filter { excludeEventId == null || it.eventId != excludeEventId }
 
-        return EventConflict.detectAll(eventsInSlot, date)
+        val externalEvents = if (calendarProvider != null) {
+            try {
+                val calendarEvents = calendarProvider.getEvents(userId, timeSlot)
+                calendarEvents
+                    .filter { !it.isAllDay }
+                    .map { ExternalEventAdapter.fromCalendarEvent(it) }
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                emptyList()
+            }
+        } else {
+            emptyList()
+        }
+
+        val allEvents = internalEvents + externalEvents
+        return EventConflict.detectAll(allEvents, date)
     }
 
     fun detectConflictsBetweenTypes(
@@ -71,8 +91,25 @@ class ConflictDetectionService(
     }
 
     private fun collectAllEventsForUser(userId: UserId, date: LocalDate): List<SchedulableEvent> {
-        return eventProviders.flatMap { provider ->
+        val internalEvents = eventProviders.flatMap { provider ->
             provider.getEventsForUserOnDate(userId, date)
         }
+
+        val externalEvents = if (calendarProvider != null) {
+            try {
+                val timeSlot = TimeSlot.forWholeDay(date)
+                val calendarEvents = calendarProvider.getEvents(userId, timeSlot)
+                calendarEvents
+                    .filter { !it.isAllDay }
+                    .map { ExternalEventAdapter.fromCalendarEvent(it) }
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                log.error("Error fetching external events for date {}: {}", date, e.message)
+                emptyList()
+            }
+        } else {
+            emptyList()
+        }
+
+        return internalEvents + externalEvents
     }
 }

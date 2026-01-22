@@ -1,6 +1,9 @@
 package ru.itmo.dws.calendar.core.domain.valueobject
 
 import java.time.Duration
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
 
 data class TimeSlot(
@@ -44,6 +47,12 @@ data class TimeSlot(
     companion object {
         fun of(start: ZonedDateTime, duration: Duration): TimeSlot {
             return TimeSlot(start, start.plus(duration))
+        }
+
+        fun forWholeDay(date: LocalDate, zoneId: ZoneId = ZoneId.systemDefault()): TimeSlot {
+            val start = date.atStartOfDay(zoneId)
+            val end = date.plusDays(1).atTime(LocalTime.MIN).atZone(zoneId)
+            return TimeSlot(start, end)
         }
     }
 }

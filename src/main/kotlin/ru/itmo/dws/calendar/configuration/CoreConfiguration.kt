@@ -71,9 +71,10 @@ class CoreConfiguration {
 
     @Bean
     fun conflictDetectionService(
-        eventProviders: List<SchedulableEventProvider>
+        eventProviders: List<SchedulableEventProvider>,
+        calendarProvider: Optional<CalendarProvider>
     ): ConflictDetectionService {
-        return ConflictDetectionService(eventProviders)
+        return ConflictDetectionService(eventProviders, calendarProvider.orElse(null))
     }
 
     @Bean
