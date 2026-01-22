@@ -12,6 +12,7 @@ import ru.itmo.dws.calendar.core.port.output.HabitOccurrenceRepository
 import ru.itmo.dws.calendar.core.port.output.HabitRepository
 import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
 
+@Suppress("LongParameterList")
 class HabitOccurrenceConflictResolutionService(
     private val habitOccurrenceRepository: HabitOccurrenceRepository,
     private val habitRepository: HabitRepository,
@@ -66,6 +67,7 @@ class HabitOccurrenceConflictResolutionService(
         )
     }
 
+    @Suppress("ReturnCount")
     private fun resolveConflictForOccurrence(
         habit: Habit,
         occurrence: HabitOccurrence
@@ -124,6 +126,7 @@ class HabitOccurrenceConflictResolutionService(
         )
     }
 
+    @Suppress("LoopWithTooManyJumpStatements")
     private fun tryMoveToNextDay(
         habit: Habit,
         occurrence: HabitOccurrence,
