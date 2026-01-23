@@ -28,9 +28,11 @@ class HabitOccurrenceConflictResolutionService(
         val today = LocalDate.now(zoneId)
         val endDate = today.plusDays(days.toLong())
 
-        log.info("Starting conflict resolution for period: {} to {}", today, endDate)
-
         val allHabits = habitRepository.findAllHabits()
+        if (allHabits.isEmpty()) {
+            return ResolutionResult(0, 0, 0)
+        }
+
         var resolvedCount = 0
         var unresolvedCount = 0
         var movedToNextDayCount = 0
@@ -40,15 +42,19 @@ class HabitOccurrenceConflictResolutionService(
                 habit.id,
                 today,
                 endDate
-            ).filter { it.status == OccurrenceStatus.SCHEDULED && it.timeSlot != null }
+            )
 
-            for (occurrence in occurrences) {
+            val scheduledOccurrences = occurrences.filter { 
+                it.status == OccurrenceStatus.SCHEDULED && it.timeSlot != null 
+            }
+
+            scheduledOccurrences.forEach { occurrence ->
                 val result = resolveConflictForOccurrence(habit, occurrence)
                 when (result) {
                     is OccurrenceResolutionResult.Resolved -> resolvedCount++
                     is OccurrenceResolutionResult.MovedToNextDay -> movedToNextDayCount++
                     is OccurrenceResolutionResult.Unresolved -> unresolvedCount++
-                    is OccurrenceResolutionResult.NoConflict -> {} // Ничего не делаем
+                    is OccurrenceResolutionResult.NoConflict -> {}
                 }
             }
         }
@@ -72,12 +78,15 @@ class HabitOccurrenceConflictResolutionService(
         habit: Habit,
         occurrence: HabitOccurrence
     ): OccurrenceResolutionResult {
-        val timeSlot = occurrence.timeSlot ?: return OccurrenceResolutionResult.NoConflict
+        val timeSlot = occurrence.timeSlot
+        if (timeSlot == null) {
+            return OccurrenceResolutionResult.NoConflict
+        }
 
         val conflicts = conflictDetectionService.detectConflictsInTimeSlot(
             userId = habit.userId,
             timeSlot = timeSlot,
-            excludeEventId = occurrence.habitId.toString()
+            excludeEventId = null
         )
 
         if (conflicts.isEmpty()) {
@@ -85,11 +94,10 @@ class HabitOccurrenceConflictResolutionService(
         }
 
         log.info(
-            "Detected {} conflict(s) for habit {} on {}: {}",
+            "Detected {} conflict(s) for habit '{}' on {}",
             conflicts.size,
-            habit.id,
-            occurrence.date,
-            timeSlot
+            habit.title,
+            occurrence.date
         )
 
         val sameDaySlot = findFreeSlotSameDay(habit, occurrence.date, habit.userId)
@@ -104,6 +112,7 @@ class HabitOccurrenceConflictResolutionService(
             }
         }
 
+        log.warn("Could not resolve conflict for habit '{}' on {}", habit.title, occurrence.date)
         return markAsUnresolved(occurrence, "Conflict detected, no free slot available")
     }
 
@@ -159,11 +168,10 @@ class HabitOccurrenceConflictResolutionService(
                 habitSyncService.syncSingleOccurrence(habit, saved)
 
                 log.info(
-                    "Moved habit {} from {} to {} (slot: {})",
-                    habit.id,
+                    "Moved habit {} from {} to {}",
+                    habit.title,
                     occurrence.date,
-                    nextDate,
-                    nextDaySlot
+                    nextDate
                 )
 
                 return OccurrenceResolutionResult.MovedToNextDay(
@@ -233,9 +241,7 @@ class HabitOccurrenceConflictResolutionService(
         date: LocalDate,
         excludeEventId: String
     ): List<TimeSlot> {
-        val allEvents = eventProviders.flatMap { provider ->
-            provider.getEventsForUserOnDate(userId, date)
-        }
+        val allEvents = conflictDetectionService.collectAllEventsForUser(userId, date)
         return eventSlotFinder.collectOccupiedSlots(allEvents, excludeEventId)
     }
 }
