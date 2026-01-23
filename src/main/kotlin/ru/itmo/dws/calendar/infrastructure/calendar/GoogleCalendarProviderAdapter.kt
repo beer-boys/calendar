@@ -20,20 +20,27 @@ import ru.itmo.dws.calendar.core.port.output.CalendarProvider
 import ru.itmo.dws.calendar.dto.google.CreateEventRequest
 import ru.itmo.dws.calendar.dto.google.EventDateTime
 import ru.itmo.dws.calendar.provider.GoogleCalendarProvider
+import ru.itmo.dws.calendar.repository.UserRepository
 
 @Component
 @Suppress("TooManyFunctions")
 class GoogleCalendarProviderAdapter(
     private val googleCalendarProvider: GoogleCalendarProvider,
-    private val gsonFactory: GsonFactory
+    private val gsonFactory: GsonFactory,
+    private val userRepository: UserRepository
 ) : CalendarProvider {
 
     private val log = LoggerFactory.getLogger(GoogleCalendarProviderAdapter::class.java)
 
     override fun getEvents(userId: UserId, timeRange: TimeSlot): List<CalendarEvent> {
-        val username = getCurrentUsername() ?: run {
-            log.debug("No user context available, returning empty events for user {}", userId)
-            return emptyList()
+        var username = getCurrentUsername()
+
+        if (username == null) {
+            username = getUsernameByUserId(userId)
+            if (username == null) {
+                log.error("User not found in DB for userId={}", userId)
+                return emptyList()
+            }
         }
 
         return try {
@@ -45,9 +52,36 @@ class GoogleCalendarProviderAdapter(
             )
             parseEventsFromJson(eventsJson, userId)
         } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
-            log.warn("Failed to get events for user {}: {}", userId, e.message)
+            log.error("Failed to get events for user {}: {}", userId, e.message, e)
             emptyList()
         }
+    }
+
+    private fun getUsernameByUserId(userId: UserId): String? {
+        return try {
+            val user = userRepository.findById(userId.value)
+            user?.username
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            log.error("Error fetching user from DB: {}", e.message, e)
+            null
+        }
+    }
+
+    private fun getUsernameOrThrow(userId: UserId, operation: String): String {
+        var username = getCurrentUsername()
+
+        if (username == null) {
+            log.debug("No SecurityContext for {}, fetching username from DB for userId={}", operation, userId)
+            username = getUsernameByUserId(userId)
+            if (username == null) {
+                throw IllegalStateException(
+                    "Cannot $operation: user not found for userId=$userId. " +
+                        "User must exist in database and have a valid login/email."
+                )
+            }
+        }
+
+        return username
     }
 
     override fun getEventsForUsers(
@@ -58,7 +92,7 @@ class GoogleCalendarProviderAdapter(
     }
 
     override fun createEvent(userId: UserId, event: SchedulableEvent): String {
-        val username = requireCurrentUsername()
+        val username = getUsernameOrThrow(userId, "create event")
         val request = toCreateEventRequest(event)
 
         val createdEvent = googleCalendarProvider.createEvent(username, PRIMARY_CALENDAR, request)
@@ -69,7 +103,7 @@ class GoogleCalendarProviderAdapter(
     }
 
     override fun updateEvent(userId: UserId, externalEventId: String, event: SchedulableEvent): Boolean {
-        val username = requireCurrentUsername()
+        val username = getUsernameOrThrow(userId, "update event")
         val request = toCreateEventRequest(event)
 
         val updatedEvent = googleCalendarProvider.patchEvent(username, PRIMARY_CALENDAR, externalEventId, request)
@@ -84,7 +118,7 @@ class GoogleCalendarProviderAdapter(
     }
 
     override fun deleteEvent(userId: UserId, externalEventId: String): Boolean {
-        val username = requireCurrentUsername()
+        val username = getUsernameOrThrow(userId, "delete event")
 
         return try {
             googleCalendarProvider.deleteEventById(username, PRIMARY_CALENDAR, externalEventId)
@@ -167,16 +201,20 @@ class GoogleCalendarProviderAdapter(
     }
 
     private fun parseEventsFromJson(json: String, userId: UserId): List<CalendarEvent> {
-        if (json.isBlank()) return emptyList()
+        if (json.isBlank()) {
+            return emptyList()
+        }
 
         return try {
             val events = gsonFactory.fromString(json, Events::class.java)
-            events.items
-                ?.filter { !isSmartCalendarEvent(it.description) }
-                ?.mapNotNull { googleEvent -> mapToCalendarEvent(googleEvent, userId) }
-                ?: emptyList()
+            val allItems = events.items ?: emptyList()
+            val nonSmartCalendarEvents = allItems.filter { !isSmartCalendarEvent(it.description) }
+
+            nonSmartCalendarEvents.mapNotNull { googleEvent ->
+                mapToCalendarEvent(googleEvent, userId)
+            }
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            log.warn("Failed to parse events JSON: {}", e.message)
+            log.error("Failed to parse events JSON: {}", e.message, e)
             emptyList()
         }
     }
@@ -234,11 +272,6 @@ class GoogleCalendarProviderAdapter(
 
     private fun getCurrentUsername(): String? {
         return SecurityContextHolder.getContext().authentication?.name
-    }
-
-    private fun requireCurrentUsername(): String {
-        return getCurrentUsername()
-            ?: error("User authentication required but not available in SecurityContext")
     }
 
     companion object {

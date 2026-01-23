@@ -2,6 +2,7 @@ package ru.itmo.dws.calendar.repository.adapter
 
 import java.sql.ResultSet
 import java.time.LocalDate
+import java.time.ZoneId
 import java.util.UUID
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
@@ -211,8 +212,8 @@ class JdbcHabitOccurrenceRepositoryAdapter(
 
             val timeSlot = if (slotStart != null && slotEnd != null) {
                 TimeSlot(
-                    start = slotStart.toZonedDateTime(),
-                    end = slotEnd.toZonedDateTime()
+                    start = slotStart.atZoneSameInstant(ZoneId.systemDefault()),
+                    end = slotEnd.atZoneSameInstant(ZoneId.systemDefault())
                 )
             } else {
                 null
