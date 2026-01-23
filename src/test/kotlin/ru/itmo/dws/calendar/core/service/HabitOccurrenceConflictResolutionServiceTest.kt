@@ -49,7 +49,7 @@ class HabitOccurrenceConflictResolutionServiceTest {
         val date = LocalDate.of(2025, 1, 20)
         val timeSlot = createTimeSlot(date, 10, 0, 11, 0)
 
-        val habit = createHabit(habitId, userId)
+        val habit = createHabit(habitId, "Завтрак", userId)
         val occurrence = createOccurrence(habitId, date, timeSlot)
 
         every { habitRepository.findAllHabits() } returns listOf(habit)
@@ -72,7 +72,7 @@ class HabitOccurrenceConflictResolutionServiceTest {
         val originalTimeSlot = createTimeSlot(date, 10, 0, 11, 0)
         val newTimeSlot = createTimeSlot(date, 14, 0, 15, 0)
 
-        val habit = createHabit(habitId, userId)
+        val habit = createHabit(habitId, "Завтрак", userId)
         val occurrence = createOccurrence(habitId, date, originalTimeSlot)
 
         every { habitRepository.findAllHabits() } returns listOf(habit)
@@ -80,6 +80,7 @@ class HabitOccurrenceConflictResolutionServiceTest {
         every { conflictDetectionService.detectConflictsInTimeSlot(any(), any(), any()) } returns listOf(
             mockk<EventConflict>()
         )
+        every { conflictDetectionService.collectAllEventsForUser(any<UserId>(), any<LocalDate>()) } returns emptyList()
         every { eventProvider.getEventsForUserOnDate(any(), any()) } returns emptyList()
         every { eventSlotFinder.collectOccupiedSlots(any(), any()) } returns emptyList()
         every { eventSlotFinder.findOptimalSlot(any(), any(), any(), any(), any(), any(), any(), any()) } returns newTimeSlot
@@ -100,7 +101,7 @@ class HabitOccurrenceConflictResolutionServiceTest {
         val date = LocalDate.of(2025, 1, 20)
         val timeSlot = createTimeSlot(date, 10, 0, 11, 0)
 
-        val habit = createHabit(habitId, userId, allowCrossDayMove = false)
+        val habit = createHabit(habitId, "Завтрак", userId, allowCrossDayMove = false)
         val occurrence = createOccurrence(habitId, date, timeSlot)
 
         every { habitRepository.findAllHabits() } returns listOf(habit)
@@ -108,6 +109,7 @@ class HabitOccurrenceConflictResolutionServiceTest {
         every { conflictDetectionService.detectConflictsInTimeSlot(any(), any(), any()) } returns listOf(
             mockk<EventConflict>()
         )
+        every { conflictDetectionService.collectAllEventsForUser(any<UserId>(), any<LocalDate>()) } returns emptyList()
         every { eventProvider.getEventsForUserOnDate(any(), any()) } returns emptyList()
         every { eventSlotFinder.collectOccupiedSlots(any(), any()) } returns emptyList()
         every { eventSlotFinder.findOptimalSlot(any(), any(), any(), any(), any(), any(), any(), any()) } returns null
@@ -131,7 +133,7 @@ class HabitOccurrenceConflictResolutionServiceTest {
         val originalTimeSlot = createTimeSlot(date, 10, 0, 11, 0)
         val nextDayTimeSlot = createTimeSlot(nextDate, 10, 0, 11, 0)
 
-        val habit = createHabit(habitId, userId, allowCrossDayMove = true)
+        val habit = createHabit(habitId, "Завтрак", userId, allowCrossDayMove = true)
         val occurrence = createOccurrence(habitId, date, originalTimeSlot)
 
         every { habitRepository.findAllHabits() } returns listOf(habit)
@@ -139,6 +141,7 @@ class HabitOccurrenceConflictResolutionServiceTest {
         every { conflictDetectionService.detectConflictsInTimeSlot(any(), any(), any()) } returns listOf(
             mockk<EventConflict>()
         )
+        every { conflictDetectionService.collectAllEventsForUser(any<UserId>(), any<LocalDate>()) } returns emptyList()
         every { eventProvider.getEventsForUserOnDate(any(), any()) } returns emptyList()
         every { eventSlotFinder.collectOccupiedSlots(any(), any()) } returns emptyList()
         every {
@@ -186,8 +189,8 @@ class HabitOccurrenceConflictResolutionServiceTest {
         val habitId2 = HabitId.generate()
         val date = LocalDate.of(2025, 1, 20)
 
-        val habit1 = createHabit(habitId1, userId1)
-        val habit2 = createHabit(habitId2, userId2)
+        val habit1 = createHabit(habitId1, "Завтрак", userId1)
+        val habit2 = createHabit(habitId2, "Обед", userId2)
 
         val occurrence1 = createOccurrence(habitId1, date, createTimeSlot(date, 10, 0, 11, 0))
         val occurrence2 = createOccurrence(habitId2, date, createTimeSlot(date, 14, 0, 15, 0))
@@ -209,11 +212,13 @@ class HabitOccurrenceConflictResolutionServiceTest {
 
     private fun createHabit(
         id: HabitId,
+        title: String,
         userId: UserId,
         allowCrossDayMove: Boolean = false
     ): Habit {
         return mockk<Habit> {
             every { this@mockk.id } returns id
+            every { this@mockk.title } returns title
             every { this@mockk.userId } returns userId
             every { priority } returns Priority(5)
             every { flexibilityWindow } returns mockk {
