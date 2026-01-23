@@ -44,8 +44,8 @@ class HabitOccurrenceConflictResolutionService(
                 endDate
             )
 
-            val scheduledOccurrences = occurrences.filter { 
-                it.status == OccurrenceStatus.SCHEDULED && it.timeSlot != null 
+            val scheduledOccurrences = occurrences.filter {
+                it.status == OccurrenceStatus.SCHEDULED && it.timeSlot != null
             }
 
             scheduledOccurrences.forEach { occurrence ->

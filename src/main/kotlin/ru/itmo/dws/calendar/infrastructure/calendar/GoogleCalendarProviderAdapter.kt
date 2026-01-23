@@ -56,7 +56,7 @@ class GoogleCalendarProviderAdapter(
             emptyList()
         }
     }
-    
+
     private fun getUsernameByUserId(userId: UserId): String? {
         return try {
             val user = userRepository.findById(userId.value)
@@ -76,11 +76,11 @@ class GoogleCalendarProviderAdapter(
             if (username == null) {
                 throw IllegalStateException(
                     "Cannot $operation: user not found for userId=$userId. " +
-                    "User must exist in database and have a valid login/email."
+                        "User must exist in database and have a valid login/email."
                 )
             }
         }
-        
+
         return username
     }
 
@@ -209,9 +209,9 @@ class GoogleCalendarProviderAdapter(
             val events = gsonFactory.fromString(json, Events::class.java)
             val allItems = events.items ?: emptyList()
             val nonSmartCalendarEvents = allItems.filter { !isSmartCalendarEvent(it.description) }
-            
-            nonSmartCalendarEvents.mapNotNull { googleEvent -> 
-                mapToCalendarEvent(googleEvent, userId) 
+
+            nonSmartCalendarEvents.mapNotNull { googleEvent ->
+                mapToCalendarEvent(googleEvent, userId)
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             log.error("Failed to parse events JSON: {}", e.message, e)

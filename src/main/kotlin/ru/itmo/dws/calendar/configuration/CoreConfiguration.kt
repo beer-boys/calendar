@@ -51,7 +51,7 @@ class CoreConfiguration {
     fun habitEventProvider(habitRepository: HabitRepository): HabitEventProvider {
         return HabitEventProvider(habitRepository)
     }
-    
+
     @Bean
     fun habitOccurrenceSchedulableEventProvider(
         habitOccurrenceRepository: HabitOccurrenceRepository,

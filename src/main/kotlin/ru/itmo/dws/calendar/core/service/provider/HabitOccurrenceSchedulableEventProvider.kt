@@ -18,15 +18,15 @@ class HabitOccurrenceSchedulableEventProvider(
     override fun getEventsForUser(userId: UserId, timeRange: TimeSlot): List<SchedulableEvent> {
         val startDate = timeRange.start.toLocalDate()
         val endDate = timeRange.end.toLocalDate()
-        
+
         val occurrences = habitOccurrenceRepository.findByUserIdAndDateRange(userId, startDate, endDate)
         val habitIds = occurrences.map { it.habitId }.distinct()
         val habitsById = habitRepository.findByIds(habitIds).associateBy { it.id }
-        
+
         return occurrences.mapNotNull { occurrence ->
             val habit = habitsById[occurrence.habitId] ?: return@mapNotNull null
             val occurrenceTimeSlot = occurrence.timeSlot ?: return@mapNotNull null
-            
+
             if (!occurrenceTimeSlot.overlapsWith(timeRange)) {
                 return@mapNotNull null
             }
@@ -39,7 +39,7 @@ class HabitOccurrenceSchedulableEventProvider(
         val occurrences = habitOccurrenceRepository.findByUserIdAndDateRange(userId, date, date)
         val habitIds = occurrences.map { it.habitId }.distinct()
         val habitsById = habitRepository.findByIds(habitIds).associateBy { it.id }
-        
+
         return occurrences.mapNotNull { occurrence ->
             val habit = habitsById[occurrence.habitId] ?: return@mapNotNull null
             val occurrenceTimeSlot = occurrence.timeSlot ?: return@mapNotNull null
