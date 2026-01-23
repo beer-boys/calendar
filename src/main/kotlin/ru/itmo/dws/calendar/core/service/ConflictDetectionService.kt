@@ -53,6 +53,7 @@ class ConflictDetectionService(
                     .filter { !it.isAllDay }
                     .map { ExternalEventAdapter.fromCalendarEvent(it) }
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                log.error("Error fetching external events: {}", e.message, e)
                 emptyList()
             }
         } else {
@@ -90,7 +91,7 @@ class ConflictDetectionService(
         return detectConflictsForEvent(event, date).isNotEmpty()
     }
 
-    private fun collectAllEventsForUser(userId: UserId, date: LocalDate): List<SchedulableEvent> {
+    fun collectAllEventsForUser(userId: UserId, date: LocalDate): List<SchedulableEvent> {
         val internalEvents = eventProviders.flatMap { provider ->
             provider.getEventsForUserOnDate(userId, date)
         }

@@ -31,6 +31,7 @@ import ru.itmo.dws.calendar.core.service.provider.DatabaseMeetingRoomBookingProv
 import ru.itmo.dws.calendar.core.service.provider.DatabaseMeetingRoomProvider
 import ru.itmo.dws.calendar.core.service.provider.FocusTimeEventProvider
 import ru.itmo.dws.calendar.core.service.provider.HabitEventProvider
+import ru.itmo.dws.calendar.core.service.provider.HabitOccurrenceSchedulableEventProvider
 import ru.itmo.dws.calendar.core.service.provider.MeetingEventProvider
 import ru.itmo.dws.calendar.core.service.provider.SchedulableEventProvider
 import ru.itmo.dws.calendar.repository.MeetingRoomBookingRepository
@@ -50,6 +51,14 @@ class CoreConfiguration {
     fun habitEventProvider(habitRepository: HabitRepository): HabitEventProvider {
         return HabitEventProvider(habitRepository)
     }
+    
+    @Bean
+    fun habitOccurrenceSchedulableEventProvider(
+        habitOccurrenceRepository: HabitOccurrenceRepository,
+        habitRepository: HabitRepository
+    ): HabitOccurrenceSchedulableEventProvider {
+        return HabitOccurrenceSchedulableEventProvider(habitOccurrenceRepository, habitRepository)
+    }
 
     @Bean
     fun meetingEventProvider(meetingRepository: MeetingRepository): MeetingEventProvider {
@@ -63,11 +72,11 @@ class CoreConfiguration {
 
     @Bean
     fun eventProviders(
-        habitEventProvider: HabitEventProvider,
+        habitOccurrenceSchedulableEventProvider: HabitOccurrenceSchedulableEventProvider,
         meetingEventProvider: MeetingEventProvider,
         focusTimeEventProvider: FocusTimeEventProvider
     ): List<SchedulableEventProvider> {
-        return listOf(habitEventProvider, meetingEventProvider, focusTimeEventProvider)
+        return listOf(habitOccurrenceSchedulableEventProvider, meetingEventProvider, focusTimeEventProvider)
     }
 
     @Bean
